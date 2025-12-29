@@ -3,6 +3,7 @@
 > **GitHub-native DevOps dashboard for deploying, verifying, and monitoring smart contracts on Mantle Network**
 
 ## Table of Contents
+
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
 3. [Prerequisites](#prerequisites)
@@ -20,7 +21,9 @@
 ## Project Overview
 
 ### What We're Building
+
 MantleForge is a unified developer dashboard that consolidates the entire smart contract lifecycle:
+
 - **Connect** GitHub repositories
 - **Deploy** contracts to Mantle with one click
 - **Verify** automatically on Mantle Explorer
@@ -29,6 +32,7 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
 - **Alert** on anomalies and errors
 
 ### Why This Matters for Mantle
+
 - Reduces developer onboarding friction
 - Leverages Mantle's modular architecture
 - Showcases Mantle SDK capabilities
@@ -36,11 +40,13 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
 - Supports the RWA ecosystem by making deployment accessible
 
 ### Target Prize Categories
+
 1. **Infrastructure & Tooling** ($15,000) - Primary
 2. **Best Mantle Integration** ($4,000) - Secondary
 3. **Best UX/Demo** ($5,000) - Secondary
 
 ### Core User Flow
+
 ```
 1. User connects GitHub → OAuth
 2. Select repository → Auto-detect contracts
@@ -114,6 +120,7 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
 ### Technology Stack
 
 **Frontend:**
+
 - Next.js 14 (App Router) - React framework
 - TypeScript - Type safety
 - TailwindCSS - Styling
@@ -124,6 +131,7 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
 - Recharts - Data visualization
 
 **Backend:**
+
 - Next.js API Routes - Serverless functions
 - Foundry - Solidity compilation
 - Octokit - GitHub API client
@@ -131,10 +139,12 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
 - ws - WebSocket server
 
 **Database:**
+
 - PostgreSQL (via Supabase)
-- Prisma ORM
+- Supabase Client (No ORM needed)
 
 **DevOps:**
+
 - Vercel - Frontend/backend hosting
 - GitHub Actions - CI/CD
 
@@ -143,12 +153,14 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
 ## Prerequisites
 
 ### Required Tools
+
 1. **Node.js 18+** - [Download](https://nodejs.org/)
 2. **pnpm** - `npm install -g pnpm`
 3. **Foundry** - [Installation Guide](https://book.getfoundry.sh/getting-started/installation)
 4. **Git** - [Download](https://git-scm.com/)
 
 ### Required Accounts
+
 1. **GitHub Account** - [Sign up](https://github.com/signup)
 2. **GitHub OAuth App** - [Create OAuth App](https://github.com/settings/developers)
 3. **Supabase Account** - [Sign up](https://supabase.com/)
@@ -156,7 +168,9 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
 5. **MetaMask Wallet** - [Install](https://metamask.io/)
 
 ### Mantle Network Setup
+
 1. **Add Mantle Testnet to MetaMask:**
+
    - Network Name: `Mantle Testnet`
    - RPC URL: `https://rpc.sepolia.mantle.xyz`
    - Chain ID: `5003`
@@ -164,6 +178,7 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
    - Block Explorer: `https://sepolia.mantlescan.xyz`
 
 2. **Add Mantle Mainnet:**
+
    - Network Name: `Mantle Mainnet`
    - RPC URL: `https://rpc.mantle.xyz`
    - Chain ID: `5000`
@@ -174,6 +189,7 @@ MantleForge is a unified developer dashboard that consolidates the entire smart 
    - Faucet: [https://faucet.sepolia.mantle.xyz](https://faucet.sepolia.mantle.xyz)
 
 ### Essential Mantle Documentation
+
 - **Official Docs:** https://docs.mantle.xyz/network
 - **Architecture Overview:** https://docs.mantle.xyz/network/system-information/architecture
 - **Transaction Lifecycle:** https://docs.mantle.xyz/network/system-information/transaction-lifecycle
@@ -209,10 +225,6 @@ mantleforge/
 │   ├── test/
 │   ├── foundry.toml
 │   └── README.md
-│
-├── prisma/                       # Database schema
-│   ├── schema.prisma
-│   └── migrations/
 │
 ├── public/                       # Static assets
 │   ├── logo.svg
@@ -305,7 +317,7 @@ mantleforge/
     │   ├── compiler.ts         # Foundry integration
     │   ├── verification.ts     # Contract verification
     │   ├── monitor.ts          # Event monitoring
-    │   ├── db.ts               # Database client
+    │   ├── supabase.ts         # Supabase client
     │   └── wagmi.ts            # wagmi configuration
     │
     ├── hooks/                   # Custom React hooks
@@ -348,10 +360,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract SimpleToken is ERC20, Ownable {
     uint256 public constant INITIAL_SUPPLY = 1_000_000 * 10**18;
-    
+
     event TokensMinted(address indexed to, uint256 amount);
     event TokensBurned(address indexed from, uint256 amount);
-    
+
     constructor(
         string memory name,
         string memory symbol
@@ -359,7 +371,7 @@ contract SimpleToken is ERC20, Ownable {
         _mint(msg.sender, INITIAL_SUPPLY);
         emit TokensMinted(msg.sender, INITIAL_SUPPLY);
     }
-    
+
     /**
      * @dev Mint new tokens (only owner)
      */
@@ -367,7 +379,7 @@ contract SimpleToken is ERC20, Ownable {
         _mint(to, amount);
         emit TokensMinted(to, amount);
     }
-    
+
     /**
      * @dev Burn tokens from caller's balance
      */
@@ -375,7 +387,7 @@ contract SimpleToken is ERC20, Ownable {
         _burn(msg.sender, amount);
         emit TokensBurned(msg.sender, amount);
     }
-    
+
     /**
      * @dev Get token info
      */
@@ -408,22 +420,22 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  */
 contract Staking is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
-    
+
     IERC20 public immutable stakingToken;
     uint256 public rewardRate; // Rewards per second per token
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
     uint256 public totalStaked;
-    
+
     mapping(address => uint256) public stakedBalance;
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
-    
+
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     event RewardRateUpdated(uint256 newRate);
-    
+
     constructor(
         address _stakingToken,
         uint256 _rewardRate
@@ -433,18 +445,18 @@ contract Staking is Ownable, ReentrancyGuard {
         rewardRate = _rewardRate;
         lastUpdateTime = block.timestamp;
     }
-    
+
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = block.timestamp;
-        
+
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
         }
         _;
     }
-    
+
     /**
      * @dev Calculate reward per token
      */
@@ -452,62 +464,62 @@ contract Staking is Ownable, ReentrancyGuard {
         if (totalStaked == 0) {
             return rewardPerTokenStored;
         }
-        
+
         return rewardPerTokenStored + (
             (block.timestamp - lastUpdateTime) * rewardRate * 1e18 / totalStaked
         );
     }
-    
+
     /**
      * @dev Calculate earned rewards for an account
      */
     function earned(address account) public view returns (uint256) {
         return (
-            stakedBalance[account] * 
+            stakedBalance[account] *
             (rewardPerToken() - userRewardPerTokenPaid[account]) / 1e18
         ) + rewards[account];
     }
-    
+
     /**
      * @dev Stake tokens
      */
     function stake(uint256 amount) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
-        
+
         totalStaked += amount;
         stakedBalance[msg.sender] += amount;
-        
+
         stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         emit Staked(msg.sender, amount);
     }
-    
+
     /**
      * @dev Unstake tokens
      */
     function unstake(uint256 amount) external nonReentrant updateReward(msg.sender) {
         require(amount > 0, "Cannot unstake 0");
         require(stakedBalance[msg.sender] >= amount, "Insufficient balance");
-        
+
         totalStaked -= amount;
         stakedBalance[msg.sender] -= amount;
-        
+
         stakingToken.safeTransfer(msg.sender, amount);
         emit Unstaked(msg.sender, amount);
     }
-    
+
     /**
      * @dev Claim rewards
      */
     function claimRewards() external nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         require(reward > 0, "No rewards available");
-        
+
         rewards[msg.sender] = 0;
         stakingToken.safeTransfer(msg.sender, reward);
-        
+
         emit RewardPaid(msg.sender, reward);
     }
-    
+
     /**
      * @dev Update reward rate (only owner)
      */
@@ -515,7 +527,7 @@ contract Staking is Ownable, ReentrancyGuard {
         rewardRate = _rewardRate;
         emit RewardRateUpdated(_rewardRate);
     }
-    
+
     /**
      * @dev Get staking info for an account
      */
@@ -591,12 +603,51 @@ echo "🚀 To deploy: Use MantleForge dashboard!"
 
 ## Backend Development
 
+### Why Supabase (Recommended for Hackathon)
+
+For the **MantleForge hackathon MVP**, Supabase is the recommended database solution as it simplifies development significantly:
+
+**Benefits of Supabase:**
+- **Free PostgreSQL database** with generous limits
+- **Built-in authentication** (can replace custom GitHub OAuth sessions)
+- **Real-time subscriptions** for live contract monitoring
+- **Auto-generated REST API** - no backend code needed for basic CRUD
+- **Instant setup** - no complex database migrations required
+
+**What you skip with Supabase:**
+- Prisma ORM entirely
+- Complex database schema management
+- Most backend boilerplate code
+- Database hosting and maintenance
+
+**Example using Supabase directly:**
+```typescript
+// No Prisma, just Supabase client
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
+
+// Save contract (no Prisma schema needed)
+const { data, error } = await supabase
+  .from('contracts')
+  .insert({
+    user_id: userId,
+    address: contractAddress,
+    abi: contractAbi,
+    network: 'mantle_testnet'
+  })
+```
+
 ### Environment Variables (`.env.local`)
 
 ```bash
 # Database (Supabase)
-DATABASE_URL="postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres"
-DIRECT_URL="postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres"
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 
 # GitHub OAuth
 GITHUB_CLIENT_ID="your_github_oauth_app_client_id"
@@ -626,199 +677,116 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NODE_ENV="development"
 ```
 
-### Database Schema (`prisma/schema.prisma`)
+### Database Schema (Supabase SQL)
 
-```prisma
-// This is your Prisma schema file
+```sql
+-- Run this in Supabase SQL editor
 
-generator client {
-  provider = "prisma-client-js"
+-- Users table
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  github_id TEXT UNIQUE NOT NULL,
+  github_username TEXT NOT NULL,
+  avatar_url TEXT,
+  access_token TEXT, -- Encrypt in production!
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Contracts table
+CREATE TABLE contracts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  address TEXT NOT NULL,
+  network TEXT NOT NULL,
+  name TEXT NOT NULL,
+  abi JSONB NOT NULL,
+  source_code TEXT,
+  deployed_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(address, network)
+);
+
+-- Index for quick lookups
+CREATE INDEX idx_contracts_user ON contracts(user_id);
+CREATE INDEX idx_contracts_address ON contracts(address);
+```
+
+### Supabase Client (`src/lib/supabase.ts`)
+
+```typescript
+import { createClient } from "@supabase/supabase-js";
+
+export const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// TypeScript types
+export type Database = {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string;
+          github_id: string;
+          github_username: string;
+          avatar_url: string | null;
+          access_token: string | null;
+          created_at: string;
+        };
+        Insert: {
+          github_id: string;
+          github_username: string;
+          avatar_url?: string;
+          access_token?: string;
+        };
+      };
+      contracts: {
+        Row: {
+          id: string;
+          user_id: string;
+          address: string;
+          network: string;
+          name: string;
+          abi: any;
+          source_code: string | null;
+          deployed_at: string;
+        };
+        Insert: {
+          user_id: string;
+          address: string;
+          network: string;
+          name: string;
+          abi: any;
+          source_code?: string;
+        };
+      };
+    };
+  };
+};
+```
+
+### Example Usage with Supabase
+
+```typescript
+// Save contract (no Prisma!)
+const { data, error } = await supabase
+  .from("contracts")
+  .insert({
+    user_id: userId,
+    address: contractAddress,
+    network: "mantle_testnet",
+    name: "MyContract",
+    abi: contractAbi,
+    source_code: sourceCode,
+  })
+  .select()
+  .single();
+
+if (error) {
+  throw new Error(`Database error: ${error.message}`);
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
-
-model User {
-  id            String    @id @default(cuid())
-  email         String?   @unique
-  githubId      String    @unique
-  githubUsername String
-  avatarUrl     String?
-  accessToken   String?   // Encrypted GitHub access token
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  repositories  Repository[]
-  contracts     Contract[]
-  alerts        Alert[]
-  
-  @@index([githubId])
-  @@index([email])
-}
-
-model Repository {
-  id            String    @id @default(cuid())
-  userId        String
-  githubRepoId  String
-  name          String
-  fullName      String
-  description   String?
-  private       Boolean   @default(false)
-  defaultBranch String    @default("main")
-  htmlUrl       String
-  language      String?
-  lastSync      DateTime  @default(now())
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contracts     Contract[]
-  
-  @@unique([userId, githubRepoId])
-  @@index([userId])
-  @@index([githubRepoId])
-}
-
-enum Network {
-  MANTLE_TESTNET
-  MANTLE_MAINNET
-}
-
-enum ContractStatus {
-  DEPLOYING
-  DEPLOYED
-  VERIFIED
-  FAILED
-}
-
-model Contract {
-  id              String          @id @default(cuid())
-  userId          String
-  repositoryId    String?
-  name            String
-  address         String
-  network         Network
-  status          ContractStatus  @default(DEPLOYING)
-  abi             Json
-  bytecode        String
-  sourceCode      String          @db.Text
-  compilerVersion String
-  constructorArgs Json?
-  deployTxHash    String?
-  deployBlock     BigInt?
-  deployGasUsed   BigInt?
-  deployCost      String?
-  verifiedAt      DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  repository      Repository?     @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
-  transactions    Transaction[]
-  events          Event[]
-  analytics       ContractAnalytics?
-  
-  @@unique([address, network])
-  @@index([userId])
-  @@index([repositoryId])
-  @@index([address])
-  @@index([network])
-}
-
-model Transaction {
-  id              String    @id @default(cuid())
-  contractId      String
-  hash            String
-  from            String
-  to              String
-  value           String
-  gasUsed         BigInt
-  gasPrice        String
-  blockNumber     BigInt
-  blockTimestamp  DateTime
-  functionName    String?
-  functionArgs    Json?
-  success         Boolean
-  revertReason    String?
-  createdAt       DateTime  @default(now())
-  
-  contract        Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  
-  @@unique([hash, contractId])
-  @@index([contractId])
-  @@index([hash])
-  @@index([blockNumber])
-}
-
-model Event {
-  id              String    @id @default(cuid())
-  contractId      String
-  txHash          String
-  eventName       String
-  eventArgs       Json
-  blockNumber     BigInt
-  blockTimestamp  DateTime
-  logIndex        Int
-  createdAt       DateTime  @default(now())
-  
-  contract        Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  
-  @@index([contractId])
-  @@index([txHash])
-  @@index([eventName])
-}
-
-model ContractAnalytics {
-  id                    String    @id @default(cuid())
-  contractId            String    @unique
-  totalTransactions     Int       @default(0)
-  successfulTxs         Int       @default(0)
-  failedTxs             Int       @default(0)
-  uniqueCallers         Int       @default(0)
-  totalGasUsed          BigInt    @default(0)
-  avgGasUsed            BigInt    @default(0)
-  lastActivityAt        DateTime?
-  updatedAt             DateTime  @updatedAt
-  
-  contract              Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  
-  @@index([contractId])
-}
-
-enum AlertType {
-  GAS_SPIKE
-  HIGH_REVERT_RATE
-  UNUSUAL_ACTIVITY
-  CRITICAL_EVENT
-  OWNERSHIP_CHANGE
-}
-
-enum AlertSeverity {
-  INFO
-  WARNING
-  CRITICAL
-}
-
-model Alert {
-  id          String          @id @default(cuid())
-  userId      String
-  contractId  String?
-  type        AlertType
-  severity    AlertSeverity
-  message     String
-  metadata    Json?
-  read        Boolean         @default(false)
-  createdAt   DateTime        @default(now())
-  
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@index([contractId])
-  @@index([read])
-}
+return data;
 ```
 
 ### Core Backend Services
@@ -826,7 +794,7 @@ model Alert {
 #### 1. GitHub Service (`src/lib/github.ts`)
 
 ```typescript
-import { Octokit } from '@octokit/rest';
+import { Octokit } from "@octokit/rest";
 
 export interface GitHubRepo {
   id: number;
@@ -842,7 +810,7 @@ export interface GitHubRepo {
 export interface GitHubFile {
   name: string;
   path: string;
-  type: 'file' | 'dir';
+  type: "file" | "dir";
   content?: string;
   sha: string;
 }
@@ -861,9 +829,9 @@ export class GitHubService {
    */
   async getRepositories(): Promise<GitHubRepo[]> {
     const { data } = await this.octokit.repos.listForAuthenticatedUser({
-      sort: 'updated',
+      sort: "updated",
       per_page: 100,
-      type: 'all',
+      type: "all",
     });
 
     return data as GitHubRepo[];
@@ -875,7 +843,7 @@ export class GitHubService {
   async getRepositoryContents(
     owner: string,
     repo: string,
-    path: string = ''
+    path: string = ""
   ): Promise<GitHubFile[]> {
     const { data } = await this.octokit.repos.getContent({
       owner,
@@ -884,10 +852,10 @@ export class GitHubService {
     });
 
     if (Array.isArray(data)) {
-      return data.map(item => ({
+      return data.map((item) => ({
         name: item.name,
         path: item.path,
-        type: item.type as 'file' | 'dir',
+        type: item.type as "file" | "dir",
         sha: item.sha,
       }));
     }
@@ -909,11 +877,11 @@ export class GitHubService {
       path,
     });
 
-    if ('content' in data && data.type === 'file') {
-      return Buffer.from(data.content, 'base64').toString('utf-8');
+    if ("content" in data && data.type === "file") {
+      return Buffer.from(data.content, "base64").toString("utf-8");
     }
 
-    throw new Error('Not a file');
+    throw new Error("Not a file");
   }
 
   /**
@@ -924,14 +892,14 @@ export class GitHubService {
 
     try {
       // Check common contract directories
-      const directories = ['contracts', 'src', 'contracts/src'];
+      const directories = ["contracts", "src", "contracts/src"];
 
       for (const dir of directories) {
         try {
           const files = await this.getRepositoryContents(owner, repo, dir);
-          
+
           for (const file of files) {
-            if (file.type === 'file' && file.name.endsWith('.sol')) {
+            if (file.type === "file" && file.name.endsWith(".sol")) {
               contracts.push(file.path);
             }
           }
@@ -941,7 +909,7 @@ export class GitHubService {
         }
       }
     } catch (error) {
-      console.error('Error detecting contracts:', error);
+      console.error("Error detecting contracts:", error);
     }
 
     return contracts;
@@ -952,7 +920,7 @@ export class GitHubService {
    */
   async hasFoundrySetup(owner: string, repo: string): Promise<boolean> {
     try {
-      await this.getFileContent(owner, repo, 'foundry.toml');
+      await this.getFileContent(owner, repo, "foundry.toml");
       return true;
     } catch {
       return false;
@@ -964,7 +932,7 @@ export class GitHubService {
    */
   async getFoundryConfig(owner: string, repo: string): Promise<string | null> {
     try {
-      return await this.getFileContent(owner, repo, 'foundry.toml');
+      return await this.getFileContent(owner, repo, "foundry.toml");
     } catch {
       return null;
     }
@@ -975,8 +943,15 @@ export class GitHubService {
 #### 2. Mantle RPC Service (`src/lib/mantle.ts`)
 
 ```typescript
-import { createPublicClient, createWalletClient, http, type Address, type Hash, type TransactionReceipt } from 'viem';
-import { mantle, mantleSepoliaTestnet } from 'viem/chains';
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  type Address,
+  type Hash,
+  type TransactionReceipt,
+} from "viem";
+import { mantle, mantleSepoliaTestnet } from "viem/chains";
 
 /**
  * Mantle Network Configuration
@@ -986,13 +961,13 @@ export const MANTLE_NETWORKS = {
   testnet: {
     chain: mantleSepoliaTestnet,
     rpcUrl: process.env.NEXT_PUBLIC_MANTLE_TESTNET_RPC!,
-    explorerUrl: 'https://sepolia.mantlescan.xyz',
+    explorerUrl: "https://sepolia.mantlescan.xyz",
     explorerApiUrl: process.env.MANTLE_TESTNET_EXPLORER_API!,
   },
   mainnet: {
     chain: mantle,
     rpcUrl: process.env.NEXT_PUBLIC_MANTLE_MAINNET_RPC!,
-    explorerUrl: 'https://mantlescan.xyz',
+    explorerUrl: "https://mantlescan.xyz",
     explorerApiUrl: process.env.MANTLE_MAINNET_EXPLORER_API!,
   },
 } as const;
@@ -1003,7 +978,7 @@ export class MantleService {
   private publicClient;
   private network: MantleNetwork;
 
-  constructor(network: MantleNetwork = 'testnet') {
+  constructor(network: MantleNetwork = "testnet") {
     this.network = network;
     const config = MANTLE_NETWORKS[network];
 
@@ -1032,15 +1007,18 @@ export class MantleService {
    */
   async getBytecode(address: Address): Promise<string> {
     const code = await this.publicClient.getBytecode({ address });
-    return code || '0x';
+    return code || "0x";
   }
 
   /**
    * Estimate gas for deployment
    */
-  async estimateDeployGas(bytecode: string, constructorArgs?: string): Promise<bigint> {
+  async estimateDeployGas(
+    bytecode: string,
+    constructorArgs?: string
+  ): Promise<bigint> {
     const data = constructorArgs ? `${bytecode}${constructorArgs}` : bytecode;
-    
+
     return await this.publicClient.estimateGas({
       data: data as `0x${string}`,
     });
@@ -1090,10 +1068,10 @@ export class MantleService {
 #### 3. Compiler Service (`src/lib/compiler.ts`)
 
 ```typescript
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import fs from 'fs/promises';
-import path from 'path';
+import { exec } from "child_process";
+import { promisify } from "util";
+import fs from "fs/promises";
+import path from "path";
 
 const execAsync = promisify(exec);
 
@@ -1116,8 +1094,8 @@ export class CompilerService {
   private tempDir: string;
 
   constructor() {
-    this.foundryPath = process.env.FOUNDRY_PATH || 'forge';
-    this.tempDir = path.join(process.cwd(), '.temp');
+    this.foundryPath = process.env.FOUNDRY_PATH || "forge";
+    this.tempDir = path.join(process.cwd(), ".temp");
   }
 
   /**
@@ -1127,7 +1105,7 @@ export class CompilerService {
     try {
       await fs.mkdir(this.tempDir, { recursive: true });
     } catch (error) {
-      console.error('Failed to create temp directory:', error);
+      console.error("Failed to create temp directory:", error);
     }
   }
 
@@ -1138,7 +1116,7 @@ export class CompilerService {
     try {
       await fs.rm(projectPath, { recursive: true, force: true });
     } catch (error) {
-      console.error('Cleanup failed:', error);
+      console.error("Cleanup failed:", error);
     }
   }
 
@@ -1148,20 +1126,22 @@ export class CompilerService {
   async compileContract(
     sourceCode: string,
     contractName: string,
-    solcVersion: string = '0.8.20'
+    solcVersion: string = "0.8.20"
   ): Promise<CompilationResult> {
     await this.initTempDir();
 
-    const projectId = `compile_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const projectId = `compile_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(7)}`;
     const projectPath = path.join(this.tempDir, projectId);
 
     try {
       // Create project structure
-      await fs.mkdir(path.join(projectPath, 'src'), { recursive: true });
-      await fs.mkdir(path.join(projectPath, 'out'), { recursive: true });
+      await fs.mkdir(path.join(projectPath, "src"), { recursive: true });
+      await fs.mkdir(path.join(projectPath, "out"), { recursive: true });
 
       // Write source code
-      const contractPath = path.join(projectPath, 'src', `${contractName}.sol`);
+      const contractPath = path.join(projectPath, "src", `${contractName}.sol`);
       await fs.writeFile(contractPath, sourceCode);
 
       // Create foundry.toml
@@ -1176,7 +1156,7 @@ optimizer_runs = 200
 via_ir = false
       `.trim();
 
-      await fs.writeFile(path.join(projectPath, 'foundry.toml'), foundryConfig);
+      await fs.writeFile(path.join(projectPath, "foundry.toml"), foundryConfig);
 
       // Compile with Foundry
       const { stdout, stderr } = await execAsync(
@@ -1186,12 +1166,12 @@ via_ir = false
       // Read compilation output
       const artifactPath = path.join(
         projectPath,
-        'out',
+        "out",
         `${contractName}.sol`,
         `${contractName}.json`
       );
 
-      const artifactContent = await fs.readFile(artifactPath, 'utf-8');
+      const artifactContent = await fs.readFile(artifactPath, "utf-8");
       const artifact = JSON.parse(artifactContent);
 
       const result: CompilationResult = {
@@ -1214,11 +1194,11 @@ via_ir = false
       return {
         success: false,
         abi: [],
-        bytecode: '',
+        bytecode: "",
         contractName,
         compilerVersion: solcVersion,
         sourceCode,
-        error: error.message || 'Compilation failed',
+        error: error.message || "Compilation failed",
       };
     }
   }
@@ -1227,21 +1207,18 @@ via_ir = false
    * Extract constructor parameters from ABI
    */
   extractConstructorParams(abi: any[]): any[] {
-    const constructor = abi.find(item => item.type === 'constructor');
+    const constructor = abi.find((item) => item.type === "constructor");
     return constructor?.inputs || [];
   }
 
   /**
    * Encode constructor arguments
    */
-  async encodeConstructorArgs(
-    abi: any[],
-    args: any[]
-  ): Promise<string> {
+  async encodeConstructorArgs(abi: any[], args: any[]): Promise<string> {
     // This would use ethers or viem to encode
     // For now, returning placeholder
     // TODO: Implement actual encoding
-    return '0x';
+    return "0x";
   }
 }
 ```
@@ -1249,7 +1226,7 @@ via_ir = false
 #### 4. Verification Service (`src/lib/verification.ts`)
 
 ```typescript
-import axios from 'axios';
+import axios from "axios";
 
 export interface VerificationParams {
   contractAddress: string;
@@ -1257,7 +1234,7 @@ export interface VerificationParams {
   contractName: string;
   compilerVersion: string;
   constructorArgs?: string;
-  network: 'testnet' | 'mainnet';
+  network: "testnet" | "mainnet";
 }
 
 export interface VerificationResult {
@@ -1274,14 +1251,14 @@ export class VerificationService {
   private apiKey: string;
 
   constructor() {
-    this.apiKey = process.env.MANTLESCAN_API_KEY || '';
+    this.apiKey = process.env.MANTLESCAN_API_KEY || "";
   }
 
   /**
    * Get explorer API URL for network
    */
-  private getExplorerApiUrl(network: 'testnet' | 'mainnet'): string {
-    return network === 'testnet'
+  private getExplorerApiUrl(network: "testnet" | "mainnet"): string {
+    return network === "testnet"
       ? process.env.MANTLE_TESTNET_EXPLORER_API!
       : process.env.MANTLE_MAINNET_EXPLORER_API!;
   }
@@ -1289,7 +1266,9 @@ export class VerificationService {
   /**
    * Verify contract on Mantle Explorer
    */
-  async verifyContract(params: VerificationParams): Promise<VerificationResult> {
+  async verifyContract(
+    params: VerificationParams
+  ): Promise<VerificationResult> {
     const apiUrl = this.getExplorerApiUrl(params.network);
 
     try {
@@ -1298,29 +1277,32 @@ export class VerificationService {
         `${apiUrl}`,
         new URLSearchParams({
           apikey: this.apiKey,
-          module: 'contract',
-          action: 'verifysourcecode',
+          module: "contract",
+          action: "verifysourcecode",
           contractaddress: params.contractAddress,
           sourceCode: params.sourceCode,
-          codeformat: 'solidity-single-file',
+          codeformat: "solidity-single-file",
           contractname: params.contractName,
           compilerversion: `v${params.compilerVersion}`,
-          optimizationUsed: '1',
-          runs: '200',
-          constructorArguements: params.constructorArgs || '',
+          optimizationUsed: "1",
+          runs: "200",
+          constructorArguements: params.constructorArgs || "",
         }),
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            "Content-Type": "application/x-www-form-urlencoded",
           },
         }
       );
 
-      if (response.data.status === '1') {
+      if (response.data.status === "1") {
         const guid = response.data.result;
 
         // Step 2: Check verification status
-        const statusResult = await this.checkVerificationStatus(guid, params.network);
+        const statusResult = await this.checkVerificationStatus(
+          guid,
+          params.network
+        );
 
         return {
           success: statusResult.success,
@@ -1330,13 +1312,13 @@ export class VerificationService {
       } else {
         return {
           success: false,
-          message: response.data.result || 'Verification failed',
+          message: response.data.result || "Verification failed",
         };
       }
     } catch (error: any) {
       return {
         success: false,
-        message: error.message || 'Verification request failed',
+        message: error.message || "Verification request failed",
       };
     }
   }
@@ -1346,32 +1328,32 @@ export class VerificationService {
    */
   async checkVerificationStatus(
     guid: string,
-    network: 'testnet' | 'mainnet'
+    network: "testnet" | "mainnet"
   ): Promise<{ success: boolean; message: string }> {
     const apiUrl = this.getExplorerApiUrl(network);
 
     try {
       // Poll for verification result (max 10 attempts, 3s interval)
       for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const response = await axios.get(`${apiUrl}`, {
           params: {
             apikey: this.apiKey,
-            module: 'contract',
-            action: 'checkverifystatus',
+            module: "contract",
+            action: "checkverifystatus",
             guid,
           },
         });
 
         const result = response.data.result;
 
-        if (result === 'Pass - Verified') {
+        if (result === "Pass - Verified") {
           return {
             success: true,
-            message: 'Contract verified successfully',
+            message: "Contract verified successfully",
           };
-        } else if (result.includes('Fail')) {
+        } else if (result.includes("Fail")) {
           return {
             success: false,
             message: result,
@@ -1382,12 +1364,12 @@ export class VerificationService {
 
       return {
         success: false,
-        message: 'Verification timeout',
+        message: "Verification timeout",
       };
     } catch (error: any) {
       return {
         success: false,
-        message: error.message || 'Status check failed',
+        message: error.message || "Status check failed",
       };
     }
   }
@@ -1400,7 +1382,7 @@ export class VerificationService {
     // This would use forge flatten or similar
     // For now, returning the source as-is
     // TODO: Implement actual flattening
-    return '';
+    return "";
   }
 }
 ```
@@ -1410,7 +1392,7 @@ export class VerificationService {
 #### 1. GitHub OAuth (`src/app/api/auth/github/route.ts`)
 
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID!;
 const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL!;
@@ -1420,14 +1402,14 @@ const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL!;
  * GET /api/auth/github
  */
 export async function GET(request: NextRequest) {
-  const scope = 'repo read:user user:email';
+  const scope = "repo read:user user:email";
   const state = Math.random().toString(36).substring(7);
 
-  const authUrl = new URL('https://github.com/login/oauth/authorize');
-  authUrl.searchParams.set('client_id', GITHUB_CLIENT_ID);
-  authUrl.searchParams.set('redirect_uri', GITHUB_CALLBACK_URL);
-  authUrl.searchParams.set('scope', scope);
-  authUrl.searchParams.set('state', state);
+  const authUrl = new URL("https://github.com/login/oauth/authorize");
+  authUrl.searchParams.set("client_id", GITHUB_CLIENT_ID);
+  authUrl.searchParams.set("redirect_uri", GITHUB_CALLBACK_URL);
+  authUrl.searchParams.set("scope", scope);
+  authUrl.searchParams.set("state", state);
 
   return NextResponse.redirect(authUrl.toString());
 }
@@ -1436,9 +1418,9 @@ export async function GET(request: NextRequest) {
 #### 2. GitHub OAuth Callback (`src/app/api/auth/callback/route.ts`)
 
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { Octokit } from '@octokit/rest';
-import { prisma } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { Octokit } from "@octokit/rest";
+import { supabase } from "@/lib/supabase";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID!;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET!;
@@ -1449,69 +1431,71 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET!;
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const code = searchParams.get('code');
+  const code = searchParams.get("code");
 
   if (!code) {
-    return NextResponse.redirect('/error?message=No code provided');
+    return NextResponse.redirect("/error?message=No code provided");
   }
 
   try {
     // Exchange code for access token
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
-        code,
-      }),
-    });
+    const tokenResponse = await fetch(
+      "https://github.com/login/oauth/access_token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_id: GITHUB_CLIENT_ID,
+          client_secret: GITHUB_CLIENT_SECRET,
+          code,
+        }),
+      }
+    );
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
-      throw new Error('Failed to get access token');
+      throw new Error("Failed to get access token");
     }
 
     // Get user info
     const octokit = new Octokit({ auth: accessToken });
     const { data: userData } = await octokit.users.getAuthenticated();
 
-    // Create or update user in database
-    const user = await prisma.user.upsert({
-      where: { githubId: userData.id.toString() },
-      update: {
-        githubUsername: userData.login,
-        avatarUrl: userData.avatar_url,
+    // Create or update user in database using Supabase
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .upsert({
+        github_id: userData.id.toString(),
+        github_username: userData.login,
+        avatar_url: userData.avatar_url,
         email: userData.email,
-        accessToken, // In production, encrypt this!
-      },
-      create: {
-        githubId: userData.id.toString(),
-        githubUsername: userData.login,
-        avatarUrl: userData.avatar_url,
-        email: userData.email,
-        accessToken, // In production, encrypt this!
-      },
-    });
+        access_token: accessToken, // In production, encrypt this!
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      throw new Error(`Database error: ${userError.message}`);
+    }
 
     // Set session cookie
-    const response = NextResponse.redirect(new URL('/dashboard', request.url));
-    response.cookies.set('userId', user.id, {
+    const response = NextResponse.redirect(new URL("/dashboard", request.url));
+    response.cookies.set("userId", user.id, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
     return response;
   } catch (error) {
-    console.error('OAuth callback error:', error);
-    return NextResponse.redirect('/error?message=Authentication failed');
+    console.error("OAuth callback error:", error);
+    return NextResponse.redirect("/error?message=Authentication failed");
   }
 }
 ```
@@ -1519,71 +1503,48 @@ export async function GET(request: NextRequest) {
 #### 3. Get Repositories (`src/app/api/repos/route.ts`)
 
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { GitHubService } from '@/lib/github';
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { GitHubService } from "@/lib/github";
 
 /**
  * Get user's GitHub repositories
  * GET /api/repos
  */
 export async function GET(request: NextRequest) {
-  const userId = request.cookies.get('userId')?.value;
+  const userId = request.cookies.get("userId")?.value;
 
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+    // Get user from Supabase
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-    if (!user || !user.accessToken) {
+    if (userError || !user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const github = new GitHubService(user.accessToken);
+    if (!user || !user.accessToken) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const github = new GitHubService(user.access_token);
     const repos = await github.getRepositories();
 
-    // Sync repos to database
-    for (const repo of repos) {
-      await prisma.repository.upsert({
-        where: {
-          userId_githubRepoId: {
-            userId: user.id,
-            githubRepoId: repo.id.toString(),
-          },
-        },
-        update: {
-          name: repo.name,
-          fullName: repo.full_name,
-          description: repo.description,
-          private: repo.private,
-          defaultBranch: repo.default_branch,
-          htmlUrl: repo.html_url,
-          language: repo.language,
-          lastSync: new Date(),
-        },
-        create: {
-          userId: user.id,
-          githubRepoId: repo.id.toString(),
-          name: repo.name,
-          fullName: repo.full_name,
-          description: repo.description,
-          private: repo.private,
-          defaultBranch: repo.default_branch,
-          htmlUrl: repo.html_url,
-          language: repo.language,
-        },
-      });
-    }
+    // For hackathon simplicity, we'll skip repository sync to database
+    // In production, you'd implement similar logic with Supabase
 
     return NextResponse.json({ repos });
   } catch (error: any) {
-    console.error('Error fetching repos:', error);
+    console.error("Error fetching repos:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch repositories' },
+      { error: error.message || "Failed to fetch repositories" },
       { status: 500 }
     );
   }
@@ -1593,9 +1554,9 @@ export async function GET(request: NextRequest) {
 #### 4. Detect Contracts (`src/app/api/repos/[repoId]/contracts/route.ts`)
 
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { GitHubService } from '@/lib/github';
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { GitHubService } from "@/lib/github";
 
 /**
  * Detect Solidity contracts in repository
@@ -1605,27 +1566,28 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { repoId: string } }
 ) {
-  const userId = request.cookies.get('userId')?.value;
+  const userId = request.cookies.get("userId")?.value;
 
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const repository = await prisma.repository.findFirst({
-      where: {
-        id: params.repoId,
-        userId,
-      },
-      include: { user: true },
-    });
+    // For hackathon simplicity, we'll get user directly
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-    if (!repository || !repository.user.accessToken) {
-      return NextResponse.json({ error: 'Repository not found' }, { status: 404 });
+    if (userError || !user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const [owner, repo] = repository.fullName.split('/');
-    const github = new GitHubService(repository.user.accessToken);
+    // For hackathon, we'll use a demo repo path instead of full database sync
+    const repoPath = 'owner/repo'; // Replace with actual logic
+    const [owner, repo] = repoPath.split('/');
+    const github = new GitHubService(user.access_token);
 
     // Detect contracts
     const contractPaths = await github.detectContracts(owner, repo);
@@ -1634,8 +1596,8 @@ export async function GET(
     const contracts = await Promise.all(
       contractPaths.map(async (contractPath) => {
         const content = await github.getFileContent(owner, repo, contractPath);
-        const fileName = contractPath.split('/').pop() || '';
-        const contractName = fileName.replace('.sol', '');
+        const fileName = contractPath.split("/").pop() || "";
+        const contractName = fileName.replace(".sol", "");
 
         return {
           path: contractPath,
@@ -1647,9 +1609,9 @@ export async function GET(
 
     return NextResponse.json({ contracts });
   } catch (error: any) {
-    console.error('Error detecting contracts:', error);
+    console.error("Error detecting contracts:", error);
     return NextResponse.json(
-      { error: error.message || 'Failed to detect contracts' },
+      { error: error.message || "Failed to detect contracts" },
       { status: 500 }
     );
   }
@@ -1659,20 +1621,20 @@ export async function GET(
 #### 5. Deploy Contract (`src/app/api/deploy/route.ts`)
 
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { CompilerService } from '@/lib/compiler';
-import { VerificationService } from '@/lib/verification';
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { CompilerService } from "@/lib/compiler";
+import { VerificationService } from "@/lib/verification";
 
 /**
  * Deploy and verify contract
  * POST /api/deploy
  */
 export async function POST(request: NextRequest) {
-  const userId = request.cookies.get('userId')?.value;
+  const userId = request.cookies.get("userId")?.value;
 
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -1685,7 +1647,7 @@ export async function POST(request: NextRequest) {
       deployTxHash,
       contractAddress,
       constructorArgs,
-      compilerVersion = '0.8.20',
+      compilerVersion = "0.8.20",
     } = body;
 
     // Compile contract
@@ -1698,55 +1660,58 @@ export async function POST(request: NextRequest) {
 
     if (!compilationResult.success) {
       return NextResponse.json(
-        { error: compilationResult.error || 'Compilation failed' },
+        { error: compilationResult.error || "Compilation failed" },
         { status: 400 }
       );
     }
 
-    // Save contract to database
-    const contract = await prisma.contract.create({
-      data: {
-        userId,
-        repositoryId: repositoryId || null,
-        name: contractName,
+    // Save contract to database using Supabase
+    const { data: contract, error: dbError } = await supabase
+      .from('contracts')
+      .insert({
+        user_id: userId,
         address: contractAddress,
-        network: network === 'mainnet' ? 'MANTLE_MAINNET' : 'MANTLE_TESTNET',
-        status: 'DEPLOYED',
+        network: network,
+        name: contractName,
         abi: compilationResult.abi,
-        bytecode: compilationResult.bytecode,
-        sourceCode,
-        compilerVersion,
-        constructorArgs: constructorArgs || null,
-        deployTxHash,
-      },
-    });
+        source_code: sourceCode,
+      })
+      .select()
+      .single();
 
-    // Verify contract (async, don't wait)
-    const verifier = new VerificationService();
-    verifier.verifyContract({
-      contractAddress,
-      sourceCode,
-      contractName,
-      compilerVersion,
-      constructorArgs,
-      network: network === 'mainnet' ? 'mainnet' : 'testnet',
-    }).then(async (result) => {
-      if (result.success) {
-        await prisma.contract.update({
-          where: { id: contract.id },
-          data: {
-            status: 'VERIFIED',
-            verifiedAt: new Date(),
-          },
+    if (dbError) {
+      console.error('Database error:', dbError);
+      // Continue with deployment even if database fails for hackathon
+    }
+
+    // Verify contract (async, don't wait if no contract saved)
+    if (contract) {
+      const verifier = new VerificationService();
+      verifier
+        .verifyContract({
+          contractAddress,
+          sourceCode,
+          contractName,
+          compilerVersion,
+          constructorArgs,
+          network: network === 'mainnet' ? 'mainnet' : 'testnet',
+        })
+        .then(async (result) => {
+          if (result.success && contract) {
+            // Optionally mark as verified in Supabase
+            await supabase
+              .from('contracts')
+              .update({ verified_at: new Date() })
+              .eq('id', contract.id);
+          }
         });
-      }
-    });
+    }
 
     return NextResponse.json({ contract });
   } catch (error: any) {
-    console.error('Deployment error:', error);
+    console.error("Deployment error:", error);
     return NextResponse.json(
-      { error: error.message || 'Deployment failed' },
+      { error: error.message || "Deployment failed" },
       { status: 500 }
     );
   }
@@ -1768,14 +1733,11 @@ export async function POST(request: NextRequest) {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "lint": "next lint"
   },
   "dependencies": {
     "@octokit/rest": "^20.0.2",
-    "@prisma/client": "^5.8.0",
+    "@supabase/supabase-js": "^2.42.0",
     "@rainbow-me/rainbowkit": "^2.0.0",
     "@tanstack/react-query": "^5.17.0",
     "axios": "^1.6.5",
@@ -1799,7 +1761,6 @@ export async function POST(request: NextRequest) {
     "eslint": "^8",
     "eslint-config-next": "14.1.0",
     "postcss": "^8",
-    "prisma": "^5.8.0",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
   }
@@ -1809,16 +1770,16 @@ export async function POST(request: NextRequest) {
 ### Wagmi Configuration (`src/lib/wagmi.ts`)
 
 ```typescript
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { mantle, mantleSepoliaTestnet } from 'wagmi/chains';
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { mantle, mantleSepoliaTestnet } from "wagmi/chains";
 
 /**
  * Wagmi & RainbowKit Configuration
  * Reference: https://www.rainbowkit.com/docs/installation
  */
 export const config = getDefaultConfig({
-  appName: 'MantleForge',
-  projectId: 'YOUR_WALLETCONNECT_PROJECT_ID', // Get from https://cloud.walletconnect.com/
+  appName: "MantleForge",
+  projectId: "YOUR_WALLETCONNECT_PROJECT_ID", // Get from https://cloud.walletconnect.com/
   chains: [mantleSepoliaTestnet, mantle],
   ssr: true,
 });
@@ -1827,16 +1788,16 @@ export const config = getDefaultConfig({
 ### Root Layout (`src/app/layout.tsx`)
 
 ```typescript
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { Providers } from '@/components/Providers';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Providers } from "@/components/Providers";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'MantleForge - Deploy to Mantle in One Click',
-  description: 'GitHub-native DevOps dashboard for Mantle smart contracts',
+  title: "MantleForge - Deploy to Mantle in One Click",
+  description: "GitHub-native DevOps dashboard for Mantle smart contracts",
 };
 
 export default function RootLayout({
@@ -1857,13 +1818,13 @@ export default function RootLayout({
 ### Providers Component (`src/components/Providers.tsx`)
 
 ```typescript
-'use client';
+"use client";
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiProvider } from 'wagmi';
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
-import { config } from '@/lib/wagmi';
-import '@rainbow-me/rainbowkit/styles.css';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider } from "wagmi";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { config } from "@/lib/wagmi";
+import "@rainbow-me/rainbowkit/styles.css";
 
 const queryClient = new QueryClient();
 
@@ -1871,9 +1832,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme()}>
-          {children}
-        </RainbowKitProvider>
+        <RainbowKitProvider theme={darkTheme()}>{children}</RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
@@ -1883,9 +1842,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 ### Landing Page (`src/app/page.tsx`)
 
 ```typescript
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Github, Zap, Shield, Activity } from 'lucide-react';
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Github, Zap, Shield, Activity } from "lucide-react";
 
 export default function Home() {
   return (
@@ -1897,8 +1856,8 @@ export default function Home() {
             Deploy to Mantle in One Click
           </h1>
           <p className="text-xl text-gray-300 mb-8">
-            GitHub-native DevOps dashboard for deploying, verifying, and monitoring
-            smart contracts on Mantle Network
+            GitHub-native DevOps dashboard for deploying, verifying, and
+            monitoring smart contracts on Mantle Network
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/api/auth/github">
@@ -1964,14 +1923,17 @@ function FeatureCard({
 ### Key Integration Points
 
 1. **Mantle RPC for Contract Deployment**
+
    - Use viem with Mantle RPC endpoints
    - Reference: https://docs.mantle.xyz/network/for-developers/quick-access
 
 2. **Mantle Explorer API for Verification**
+
    - Submit verification requests
    - Reference: https://docs.mantle.xyz/network/for-developers/how-to-guides/how-to-verify-smart-contracts
 
 3. **Mantle SDK Usage** (Optional Enhancement)
+
    - Use official Mantle SDK for optimizations
    - Reference: https://docs.mantle.xyz/network/for-developers/how-to-guides/how-to-use-mantle-sdk
 
@@ -1997,13 +1959,13 @@ pnpm install
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 
-# 4. Setup database
-pnpm db:generate
-pnpm db:push
-
-# 5. Configure environment variables
+# 4. Configure environment variables
 cp .env.example .env.local
 # Edit .env.local with your credentials
+
+# 5. Setup database tables in Supabase
+# Run the SQL schema from this README in your Supabase SQL editor
+
 
 # 6. Run development server
 pnpm dev
@@ -2046,10 +2008,12 @@ vercel --prod
 ### Demo Script Outline
 
 1. **Problem Statement** (30s)
+
    - Show current deployment friction
    - Multiple tools, context switching
 
 2. **Solution Demo** (2min)
+
    - Login with GitHub
    - Select repository
    - One-click deploy
@@ -2057,6 +2021,7 @@ vercel --prod
    - Dashboard tour
 
 3. **Mantle Integration** (30s)
+
    - Highlight Mantle-specific features
    - Reference documentation usage
 
@@ -2079,16 +2044,45 @@ vercel --prod
 ## Additional Resources
 
 ### Mantle Documentation
+
 - Main docs: https://docs.mantle.xyz/network
 - Developer guides: https://docs.mantle.xyz/network/for-developers/how-to-guides
 - Tutorials: https://github.com/mantlenetworkio/mantle-tutorial
 
 ### Development Tools
+
 - Foundry Book: https://book.getfoundry.sh/
 - Viem Docs: https://viem.sh/
 - RainbowKit Docs: https://www.rainbowkit.com/docs
-- Prisma Docs: https://www.prisma.io/docs
+- Supabase Docs: https://supabase.com/docs
 
 ---
 
-**This README provides complete implementation guidance for building MantleForge. Follow each section sequentially for successful development and deployment.**
+## Recommendation Summary
+
+### Supabase vs Prisma for MantleForge
+
+For **hackathon development speed**, Supabase provides significant advantages:
+
+| Area | Prisma | Supabase |
+|------|--------|----------|
+| **Setup Time** | 30-60 min | 10-15 min |
+| **Backend Code** | Complex ORM queries | Direct client calls |
+| **Real-time Features** | Manual implementation | Built-in subscriptions |
+| **Type Safety** | Excellent | Good (with generated types) |
+| **Database Setup** | Complex migrations | Simple SQL tables |
+
+### Why Supabase Wins for Hackathons:
+1. **Instant PostgreSQL** - No database setup required
+2. **Real-time subscriptions** - Perfect for contract monitoring
+3. **Built-in auth** - Can replace session management
+4. **No migrations** - Just run SQL in the Supabase dashboard
+5. **Less code** - Direct client usage eliminates backend boilerplate
+
+### Simplified Stack with Supabase:
+```
+Frontend → Supabase Client → PostgreSQL Database
+         ↘ Mantle RPC (for live blockchain data)
+```
+
+**This README provides complete implementation guidance for building MantleForge using Supabase for maximum hackathon velocity. Follow each section sequentially for successful development and deployment.**
