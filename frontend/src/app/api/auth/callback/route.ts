@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
-      throw new Error("Failed access token");
+      console.error("No access token in GitHub response:", tokenData);
+      throw new Error("Failed to get access token from GitHub");
     }
 
     // Get user info
@@ -53,12 +54,13 @@ export async function GET(request: NextRequest) {
         github_id: userData.id.toString(),
         github_username: userData.login,
         avatar_url: userData.avatar_url,
-        access_token: accessToken, // In production, encrypt this!
-      })
+        access_token: accessToken,
+      }, { onConflict: 'github_id' })
       .select()
       .single();
 
     if (userError) {
+      console.error("Supabase upsert error:", userError);
       throw new Error(`Database error: ${userError.message}`);
     }
 
@@ -74,6 +76,7 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("OAuth callback error:", error);
-    return NextResponse.redirect(new URL("/error?message=Authentication failed", request.url));
+    const message = encodeURIComponent(error.message || "Authentication failed");
+    return NextResponse.redirect(new URL(`/error?message=${message}`, request.url));
   }
 }

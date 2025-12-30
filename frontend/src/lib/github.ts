@@ -1,23 +1,6 @@
 import { Octokit } from "octokit";
 
-export interface GitHubRepo {
-  id: number;
-  name: string;
-  full_name: string;
-  description: string | null;
-  private: boolean;
-  html_url: string;
-  default_branch: string;
-  language: string | null;
-}
-
-export interface GitHubFile {
-  name: string;
-  path: string;
-  type: "file" | "dir";
-  content?: string;
-  sha: string;
-}
+import { GitHubRepo, GitHubFile } from "@/types/github";
 
 export class GitHubService {
   private octokit: Octokit;
@@ -39,6 +22,17 @@ export class GitHubService {
     });
 
     return data as GitHubRepo[];
+  }
+
+  /**
+   * Get repository by ID
+   */
+  async getRepositoryById(repoId: number): Promise<GitHubRepo> {
+    const { data } = await this.octokit.request("GET /repositories/{repository_id}", {
+      repository_id: repoId,
+    });
+
+    return data as any as GitHubRepo;
   }
 
   /**

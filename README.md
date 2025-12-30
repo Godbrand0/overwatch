@@ -97,11 +97,10 @@ mantleforge/
 │   ├── src/
 │   │   ├── app/         # Next.js App Router pages
 │   │   ├── components/  # React components
-│   │   ├── lib/         # Utility libraries
-│   │   └── hooks/       # Custom React hooks
+│   │   ├── lib/         # Backend logic & utilities
+│   │   ├── hooks/       # Custom React hooks
+│   │   └── types/       # TypeScript types
 │   └── package.json
-│
-├── Backend/              # Backend services
 │
 └── README.md            # You are here
 ```
@@ -137,7 +136,7 @@ Read and write to your deployed contracts directly from the UI without writing a
 
 ## Documentation
 
-- [Complete Development Guide](reademe.md) - Comprehensive guide for building MantleForge
+- [Complete Development Guide](README_GUIDE.md) - Comprehensive guide for building MantleForge
 - [Mantle Network Docs](https://docs.mantle.xyz/network)
 - [Foundry Book](https://book.getfoundry.sh/)
 
@@ -169,7 +168,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- Documentation: [reademe.md](reademe.md)
+- Documentation: [README_GUIDE.md](README_GUIDE.md)
 - Issues: [GitHub Issues](https://github.com/yourusername/mantleforge/issues)
 - Mantle Discord: [Join Here](https://discord.gg/mantle)
 

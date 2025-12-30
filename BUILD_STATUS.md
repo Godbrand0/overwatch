@@ -187,12 +187,12 @@ Visit [http://localhost:3000](http://localhost:3000)
 
 Following the [reademe.md](reademe.md) guide, these features can be added:
 
-- [ ] Repository browser page
-- [ ] Contract selector with file tree
-- [ ] Deployment flow with constructor form
-- [ ] Contract dashboard with read/write functions
-- [ ] Transaction history viewer
-- [ ] Event log monitoring
+- [x] Repository browser page
+- [x] Contract selector with file tree
+- [x] Deployment flow with constructor form
+- [x] Contract dashboard with read/write functions
+- [x] Transaction history viewer (UI placeholder)
+- [x] Event log monitoring (UI placeholder)
 - [ ] Real-time WebSocket updates
 - [ ] Analytics and charts (using Recharts)
 - [ ] Alert system for contract events
