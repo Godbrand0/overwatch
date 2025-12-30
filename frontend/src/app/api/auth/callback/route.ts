@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
-      throw new Error("Failed to get access token");
+      throw new Error("Failed access token");
     }
 
     // Get user info
