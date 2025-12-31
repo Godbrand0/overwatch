@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       contractAddress,
       constructorArgs,
       compilerVersion = "0.8.20",
+      compileOnly = false,
     } = body;
 
     // Compile contract
@@ -40,6 +41,15 @@ export async function POST(request: NextRequest) {
         { error: compilationResult.error || "Compilation failed" },
         { status: 400 }
       );
+    }
+
+    // If compileOnly mode, just return compilation results
+    if (compileOnly) {
+      return NextResponse.json({
+        success: true,
+        abi: compilationResult.abi,
+        bytecode: compilationResult.bytecode,
+      });
     }
 
     // Save contract to database using Supabase
@@ -58,31 +68,10 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('Database error:', dbError);
-      // Continue with deployment even if database fails for hackathon
-    }
-
-    // Verify contract (async, don't wait)
-    if (contract) {
-      const verifier = new VerificationService();
-      verifier
-        .verifyContract({
-          contractAddress,
-          sourceCode,
-          contractName,
-          compilerVersion,
-          constructorArgs,
-          network: network === 'mainnet' ? 'mainnet' : 'testnet',
-        })
-        .then(async (result) => {
-          if (result.success && contract) {
-            // Mark as verified in Supabase
-            await supabase
-              .from('contracts')
-              .update({ verified_at: new Date().toISOString() })
-              .eq('id', contract.id);
-          }
-        })
-        .catch(err => console.error('Verification error:', err));
+      return NextResponse.json(
+        { error: "Failed to save contract to database: " + dbError.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

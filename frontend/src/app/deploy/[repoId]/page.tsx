@@ -1,53 +1,66 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ContractSelector } from "@/components/deploy/ContractSelector";
-import { ConstructorForm } from "@/components/deploy/ConstructorForm";
+import { ContractDetails } from "@/components/deploy/ContractDetails";
+import { DeploymentStatus } from "@/components/deploy/DeploymentStatus";
+import { CompilationError } from "@/components/deploy/CompilationError";
 import { DeployProgress, DeployStep } from "@/components/deploy/DeployProgress";
 import { GitHubRepo } from "@/types/github";
-import { Loader2, ArrowLeft, Rocket, ShieldCheck, Activity } from "lucide-react";
+import { Loader2, ArrowLeft, Rocket, ShieldCheck, Activity, Cpu, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useAccount, useDeployContract } from "wagmi";
+import { useAccount, useDeployContract, useWaitForTransactionReceipt } from "wagmi";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export default function DeployPage({ params }: { params: Promise<{ repoId: string }> }) {
   const { repoId } = use(params);
   const router = useRouter();
   const { address, isConnected } = useAccount();
-  
+
   const [repo, setRepo] = useState<GitHubRepo | null>(null);
   const [selectedContract, setSelectedContract] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
+  const [compiling, setCompiling] = useState(false);
+  const [isCompiled, setIsCompiled] = useState(false);
+  const [compilationError, setCompilationError] = useState<string | null>(null);
+
   const [deploying, setDeploying] = useState(false);
-  const [showVerifyPrompt, setShowVerifyPrompt] = useState(false);
-  const [pendingDeployData, setPendingDeployData] = useState<any>(null);
+  const [deploymentStatus, setDeploymentStatus] = useState<"pending" | "success" | "error">("pending");
+  const [deploymentError, setDeploymentError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+
+  const [compiledData, setCompiledData] = useState<any>(null);
+  const [deploymentData, setDeploymentData] = useState<any>(null);
+
   const [steps, setSteps] = useState<DeployStep[]>([
     { id: "compile", label: "Compiling Contract", status: "pending" },
     { id: "deploy", label: "Deploying to Mantle", status: "pending" },
     { id: "verify", label: "Verifying on Explorer", status: "pending" },
   ]);
 
+  const { deployContract, data: deployHash, error: deployError } = useDeployContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed, data: receipt } = useWaitForTransactionReceipt({
+    hash: deployHash,
+  });
+
+  // Update deploy step when transaction is sent and confirming
+  useEffect(() => {
+    if (deployHash && isConfirming) {
+      const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${deployHash}`;
+      updateStep("deploy", "loading", `Confirming transaction... [View on Explorer](${explorerUrl})`);
+    }
+  }, [deployHash, isConfirming]);
+
   useEffect(() => {
     async function fetchRepo() {
       try {
         const response = await fetch(`/api/repos/${repoId}/contracts`);
-        
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          throw new Error(`Server returned an invalid response: ${text.substring(0, 100)}...`);
-        }
-
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch repository data");
-        }
-
+        if (!response.ok) throw new Error(data.error || "Failed to fetch repository data");
         setRepo(data.repo);
       } catch (err: any) {
         setError(err.message);
@@ -55,106 +68,197 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
         setLoading(false);
       }
     }
-
     if (repoId) fetchRepo();
   }, [repoId]);
 
-  const handleDeploy = async (args: any[]) => {
+  // Reset state when contract selection changes
+  useEffect(() => {
+    setIsCompiled(false);
+    setCompilationError(null);
+    setDeploymentStatus("pending");
+    setDeploymentError(null);
+    setCompiledData(null);
+    setDeploymentData(null);
+    setSteps([
+      { id: "compile", label: "Compiling Contract", status: "pending" },
+      { id: "deploy", label: "Deploying to Mantle", status: "pending" },
+      { id: "verify", label: "Verifying on Explorer", status: "pending" },
+    ]);
+  }, [selectedContract]);
+
+  // Handle deployment error (e.g. user rejected)
+  useEffect(() => {
+    if (deployError) {
+      updateStep("deploy", "error", deployError.message);
+      setDeploymentError(deployError.message);
+      setDeploymentStatus("error");
+      setDeploying(false);
+    }
+  }, [deployError]);
+
+  // Handle transaction confirmation
+  useEffect(() => {
+    async function handleConfirmation() {
+      if (isConfirmed && receipt && compiledData) {
+        try {
+          if (receipt.status === 'reverted') {
+            updateStep("deploy", "error", "Transaction reverted on-chain");
+            setDeploymentError("Transaction reverted - check constructor arguments and contract logic");
+            setDeploymentStatus("error");
+            setDeploying(false);
+            return;
+          }
+
+          const contractAddress = receipt.contractAddress;
+          if (!contractAddress) {
+            updateStep("deploy", "error", "No contract address returned");
+            setDeploymentError("Deployment failed - no contract address was generated");
+            setDeploymentStatus("error");
+            setDeploying(false);
+            return;
+          }
+
+          updateStep("deploy", "success");
+
+          // Save to DB
+          const saveResponse = await fetch("/api/deploy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              repositoryId: repoId,
+              sourceCode: compiledData.sourceCode,
+              contractName: compiledData.contractName,
+              network: "testnet",
+              deployTxHash: receipt.transactionHash,
+              contractAddress,
+              constructorArgs: compiledData.constructorArgs,
+            }),
+          });
+
+          const saveData = await saveResponse.json();
+
+          setDeploymentData({
+            contractAddress,
+            txHash: receipt.transactionHash,
+            blockNumber: Number(receipt.blockNumber),
+            nonce: 0, // Nonce is not directly in receipt, would need to fetch from provider if critical
+            abi: compiledData.abi,
+            bytecode: compiledData.bytecode,
+            sourceCode: compiledData.sourceCode,
+            contractName: compiledData.contractName,
+            constructorArgs: compiledData.constructorArgs,
+          });
+
+          setDeploymentStatus("success");
+          setDeploying(false);
+        } catch (err: any) {
+          updateStep("deploy", "error", err.message);
+          setDeploymentError(err.message);
+          setDeploymentStatus("error");
+          setDeploying(false);
+        }
+      }
+    }
+    handleConfirmation();
+  }, [isConfirmed, receipt, compiledData]);
+
+  const handleCompile = async () => {
     if (!selectedContract || !repo) return;
-    
-    setDeploying(true);
+
+    setCompiling(true);
+    setCompilationError(null);
     updateStep("compile", "loading");
 
     try {
-      // 1. Get source code and compile
       const sourceResponse = await fetch(`/api/repos/${repoId}/file?path=${selectedContract}`);
-      
-      const sourceContentType = sourceResponse.headers.get("content-type");
-      if (!sourceContentType || !sourceContentType.includes("application/json")) {
-        const text = await sourceResponse.text();
-        throw new Error(`Server returned an invalid response while fetching file: ${text.substring(0, 100)}...`);
-      }
-
       const sourceData = await sourceResponse.json();
-      
-      const deployResponse = await fetch("/api/deploy", {
+      const contractName = selectedContract.split("/").pop()?.replace(".sol", "");
+
+      const compileResponse = await fetch("/api/deploy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           repositoryId: repoId,
           sourceCode: sourceData.content,
-          contractName: selectedContract.split("/").pop()?.replace(".sol", ""),
-          network: "testnet", // Default to testnet for now
-          constructorArgs: args,
+          contractName,
+          network: "testnet",
+          compileOnly: true,
         }),
       });
 
-      const deployContentType = deployResponse.headers.get("content-type");
-      if (!deployContentType || !deployContentType.includes("application/json")) {
-        const text = await deployResponse.text();
-        throw new Error(`Server returned an invalid response while deploying: ${text.substring(0, 100)}...`);
-      }
+      const compileData = await compileResponse.json();
+      if (!compileResponse.ok) throw new Error(compileData.error || "Compilation failed");
 
-      const deployData = await deployResponse.json();
-      
-      if (!deployResponse.ok) {
-        throw new Error(deployData.error || "Deployment failed");
-      }
-
-      updateStep("compile", "success");
-      updateStep("deploy", "loading");
-
-      // In a real app, we would use wagmi to send the transaction here
-      // For the MVP, the API handles the compilation and we mock the deployment
-      
-      // Simulate deployment time
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      updateStep("deploy", "success");
-      
-      // Store data for potential verification and show prompt
-      setPendingDeployData({
-        ...deployData,
+      setCompiledData({
+        ...compileData,
         sourceCode: sourceData.content,
-        constructorArgs: args
+        contractName,
       });
-      setShowVerifyPrompt(true);
-      setDeploying(false);
-
+      setIsCompiled(true);
+      updateStep("compile", "success");
     } catch (err: any) {
-      const currentStep = steps.find(s => s.status === "loading")?.id || "compile";
-      updateStep(currentStep, "error", err.message);
+      updateStep("compile", "error", err.message);
+      setCompilationError(err.message);
+    } finally {
+      setCompiling(false);
+    }
+  };
+
+  const handleDeploy = async (args: any[]) => {
+    if (!compiledData || !isConnected) return;
+
+    setDeploying(true);
+    setDeploymentStatus("pending");
+    setDeploymentError(null);
+    updateStep("deploy", "loading");
+
+    try {
+      setCompiledData((prev: any) => ({ ...prev, constructorArgs: args }));
+      
+      deployContract({
+        abi: compiledData.abi,
+        bytecode: compiledData.bytecode as `0x${string}`,
+        args: args.length > 0 ? args : undefined,
+      });
+    } catch (err: any) {
+      updateStep("deploy", "error", err.message);
+      setDeploymentError(err.message);
+      setDeploymentStatus("error");
       setDeploying(false);
     }
   };
 
-  const handleConfirmVerify = async () => {
-    if (!pendingDeployData) return;
-    
-    setShowVerifyPrompt(false);
-    setDeploying(true);
+  const handleVerify = async () => {
+    if (!deploymentData) return;
+
+    setVerifying(true);
     updateStep("verify", "loading");
 
     try {
-      // In a real app, this would call the verification API
-      // For now, we simulate verification time
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+      const verifyResponse = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractAddress: deploymentData.contractAddress,
+          sourceCode: deploymentData.sourceCode,
+          contractName: deploymentData.contractName,
+          constructorArgs: deploymentData.constructorArgs,
+          network: "testnet",
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+      if (!verifyResponse.ok) throw new Error(verifyData.error || "Verification failed");
+
       updateStep("verify", "success");
-      
-      // Redirect to contract dashboard after success
       setTimeout(() => {
-        router.push(`/contract/${pendingDeployData.contract.address}`);
+        router.push(`/contract/${deploymentData.contractAddress}`);
       }, 2000);
     } catch (err: any) {
       updateStep("verify", "error", err.message);
-      setDeploying(false);
+    } finally {
+      setVerifying(false);
     }
-  };
-
-  const handleSkipVerify = () => {
-    if (!pendingDeployData) return;
-    router.push(`/contract/${pendingDeployData.contract.address}`);
   };
 
   const updateStep = (id: string, status: DeployStep["status"], error?: string) => {
@@ -174,28 +278,40 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
 
   return (
     <div className="min-h-screen bg-gray-900 text-white py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <Link href="/repos" className="inline-flex items-center text-gray-400 hover:text-white mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Repositories
-        </Link>
-
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Deploy Contract</h1>
+      <div className="container mx-auto px-4 max-w-5xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="space-y-2">
+            <Link href="/repos" className="inline-flex items-center text-gray-400 hover:text-white transition-colors text-sm mb-2">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Repositories
+            </Link>
+            <h1 className="text-4xl font-bold tracking-tight">
+              {deploymentStatus === "success" ? "Deployment Complete" : "Deploy Contract"}
+            </h1>
             <p className="text-gray-400">
-              {repo?.full_name} • {selectedContract || "Select a contract to begin"}
+              {repo?.full_name} {selectedContract && `• ${selectedContract}`}
             </p>
           </div>
-          <div className="hidden md:flex gap-4">
-            <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-sm">
+
+          <div className="flex items-center gap-4">
+            {deploymentStatus !== "success" && isCompiled && !compilationError && (
+              <Button 
+                onClick={() => document.getElementById('deploy-btn')?.click()}
+                disabled={deploying || !isConnected}
+                className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold shadow-lg shadow-blue-500/20"
+              >
+                {deploying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                Deploy Contract
+              </Button>
+            )}
+            <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-sm font-medium">
               <Rocket className="w-4 h-4" />
               Mantle Testnet
             </div>
           </div>
         </div>
 
-        {!isConnected && (
+        {!isConnected && deploymentStatus !== "success" && (
           <Alert className="mb-8 bg-yellow-900/20 border-yellow-900/50 text-yellow-500">
             <ShieldCheck className="h-4 w-4" />
             <AlertTitle>Wallet Not Connected</AlertTitle>
@@ -205,67 +321,94 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
           </Alert>
         )}
 
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-8">
-            <section>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-sm">1</span>
-                Select Contract
-              </h2>
-              <ContractSelector
-                repoId={repoId}
-                selectedContract={selectedContract}
-                onSelect={setSelectedContract}
+        <div className="grid lg:grid-cols-3 gap-12">
+          <div className="lg:col-span-2 space-y-12">
+            {deploymentStatus !== "pending" ? (
+              <DeploymentStatus 
+                status={deploymentStatus === "success" ? "success" : "error"}
+                error={deploymentError || undefined}
+                contractAddress={deploymentData?.contractAddress}
+                txHash={deploymentData?.txHash}
+                blockNumber={deploymentData?.blockNumber}
+                nonce={deploymentData?.nonce}
+                abi={deploymentData?.abi}
+                bytecode={deploymentData?.bytecode}
+                onVerify={handleVerify}
+                onRetry={() => handleDeploy(compiledData?.constructorArgs || [])}
+                verifying={verifying}
               />
-            </section>
-
-            {selectedContract && (
-              <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-sm">2</span>
-                  Configure & Deploy
-                </h2>
-                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                  <ConstructorForm
-                    abi={[]} // We should fetch the ABI after selection or from the compilation API
-                    onDeploy={handleDeploy}
-                    loading={deploying}
+            ) : compilationError ? (
+              <CompilationError 
+                error={compilationError}
+                contractName={selectedContract?.split('/').pop() || "Contract"}
+                onRetry={handleCompile}
+              />
+            ) : (
+              <>
+                <section className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-blue-500">1</div>
+                    <h2 className="text-2xl font-bold">Select Contract</h2>
+                  </div>
+                  <ContractSelector
+                    repoId={repoId}
+                    selectedContract={selectedContract}
+                    onSelect={setSelectedContract}
                   />
-                </div>
-              </section>
+                  {selectedContract && !isCompiled && !compiling && (
+                    <div className="flex justify-end animate-in fade-in slide-in-from-right-4">
+                      <Button 
+                        onClick={handleCompile}
+                        disabled={compiling}
+                        className="bg-blue-600 hover:bg-blue-700 h-12 px-8 text-lg"
+                      >
+                        {compiling ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Cpu className="w-5 h-5 mr-2" />}
+                        Compile Contract
+                      </Button>
+                    </div>
+                  )}
+                </section>
+
+                {isCompiled && (
+                  <section className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-blue-500">2</div>
+                      <h2 className="text-2xl font-bold">Review & Configure</h2>
+                    </div>
+                    <ContractDetails 
+                      abi={compiledData.abi}
+                      bytecode={compiledData.bytecode}
+                      onDeploy={handleDeploy}
+                      deploying={deploying}
+                    />
+                    {/* Hidden button for the top corner trigger */}
+                    <button id="deploy-btn" className="hidden" onClick={() => {}} />
+                  </section>
+                )}
+              </>
             )}
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 sticky top-8">
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-blue-500" />
-                Deployment Progress
+          <div className="space-y-8">
+            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-8 sticky top-8 backdrop-blur-sm">
+              <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
+                <Activity className="w-6 h-6 text-blue-500" />
+                Process Status
               </h3>
               <DeployProgress steps={steps} />
-
-              {showVerifyPrompt && (
-                <div className="mt-8 p-4 bg-blue-900/20 border border-blue-800/50 rounded-lg animate-in fade-in slide-in-from-top-4">
-                  <p className="text-sm text-blue-200 mb-4">
-                    Contract deployed successfully! Would you like to verify it on the Mantle Explorer?
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <Button 
-                      onClick={handleConfirmVerify}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm h-9"
-                    >
-                      Yes, Verify Now
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={handleSkipVerify}
-                      className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 text-sm h-9"
-                    >
-                      No, Skip for Now
-                    </Button>
+              
+              <div className="mt-12 pt-8 border-t border-gray-700/50">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Network</span>
+                    <span className="text-blue-400 font-medium">Mantle Sepolia</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Status</span>
+                    <span className="text-green-400 font-medium">Connected</span>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
