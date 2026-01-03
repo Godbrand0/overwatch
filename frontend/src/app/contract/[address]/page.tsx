@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ContractOverview } from "@/components/contract/ContractOverview";
 import { ReadFunctions } from "@/components/contract/ReadFunctions";
 import { WriteFunctions } from "@/components/contract/WriteFunctions";
-import { Loader2, AlertCircle, Terminal, Activity, History, ShieldAlert, ShieldCheck, ArrowRight } from "lucide-react";
+import { Loader2, AlertCircle, Terminal, Activity, History, ShieldAlert, ShieldCheck, ArrowRight, TestTube, CheckCircle2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -134,6 +134,14 @@ export default function ContractDashboard({ params }: { params: Promise<{ addres
               <Terminal className="w-4 h-4 mr-2" />
               Interact
             </TabsTrigger>
+            <TabsTrigger value="tests" className="data-[state=active]:bg-gray-700">
+              <TestTube className="w-4 h-4 mr-2" />
+              Tests
+            </TabsTrigger>
+            <TabsTrigger value="rwa" className="data-[state=active]:bg-gray-700">
+              <ShieldCheck className="w-4 h-4 mr-2" />
+              RWA Compliance
+            </TabsTrigger>
             <TabsTrigger value="monitoring" className="data-[state=active]:bg-gray-700">
               <Activity className="w-4 h-4 mr-2" />
               Monitoring
@@ -182,6 +190,91 @@ export default function ContractDashboard({ params }: { params: Promise<{ addres
                   {verifying ? "Verifying..." : "Verify Contract to Unlock"}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="tests" className="mt-6">
+             <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-12 text-center">
+              <TestTube className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Contract Tests</h3>
+              <p className="text-gray-400 max-w-md mx-auto">
+                No test results available for this contract. Run tests during deployment to see them here.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="rwa" className="mt-6">
+            {contract.rwa_compliance?.isCompliant ? (
+              <div className="space-y-6">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-6">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Mantle RWA Compliant</h3>
+                      <p className="text-blue-400">This contract meets the standards for Real-World Assets on Mantle.</p>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {contract.rwa_compliance.detectedFeatures.map((feature: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2 text-gray-300 bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {contract.rwa_proof && (
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-6">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
+                        <ShieldCheck className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white">Asset Proof Anchored</h3>
+                        <p className="text-purple-400">Cryptographic proof of asset backing linked to this deployment.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-widest text-gray-500 font-bold">Asset Type</p>
+                        <p className="text-lg font-mono text-white">{contract.rwa_proof.assetType}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-widest text-gray-500 font-bold">Custodian</p>
+                        <p className="text-lg font-mono text-white">{contract.rwa_proof.custodian}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-widest text-gray-500 font-bold">Initial NAV</p>
+                        <p className="text-lg font-mono text-white">
+                          {contract.rwa_proof.nav} {contract.rwa_proof.currency}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-widest text-gray-500 font-bold">Redemption Terms</p>
+                        <p className="text-lg font-mono text-white">{contract.rwa_proof.redemptionTerms}</p>
+                      </div>
+                      <div className="space-y-1 md:col-span-2">
+                        <p className="text-xs uppercase tracking-widest text-gray-500 font-bold">Proof Timestamp</p>
+                        <p className="text-sm font-mono text-gray-400">
+                          {new Date(contract.rwa_proof.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-12 text-center">
+                <ShieldAlert className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Not RWA Compliant</h3>
+                <p className="text-gray-400 max-w-md mx-auto">
+                  This contract does not appear to implement standard RWA interfaces (e.g., ERC-3643).
+                </p>
               </div>
             )}
           </TabsContent>

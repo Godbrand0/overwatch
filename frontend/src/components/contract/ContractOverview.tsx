@@ -14,6 +14,12 @@ interface ContractOverviewProps {
     deployed_at: string;
     verified_at?: string;
     abi?: any[];
+    rwa_compliance?: {
+      isCompliant: boolean;
+      detectedFeatures: string[];
+      standard?: string;
+    };
+    rwa_proof?: any;
   };
 }
 
@@ -38,12 +44,26 @@ export function ContractOverview({ contract }: ContractOverviewProps) {
                 <CardTitle className="text-3xl font-bold text-white">
                   {contract.name}
                 </CardTitle>
-                {contract.verified_at && (
-                  <Badge className="bg-green-500/10 text-green-400 border-green-500/20 flex gap-1 px-2 py-0.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Verified
-                  </Badge>
-                )}
+                <div className="flex gap-2">
+                  {contract.verified_at && (
+                    <Badge className="bg-green-500/10 text-green-400 border-green-500/20 flex gap-1 px-2 py-0.5">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Verified
+                    </Badge>
+                  )}
+                  {contract.rwa_compliance?.isCompliant && (
+                    <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 flex gap-1 px-2 py-0.5">
+                      <Zap className="w-3.5 h-3.5 text-blue-400" />
+                      Mantle RWA
+                    </Badge>
+                  )}
+                  {contract.rwa_proof && (
+                    <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 flex gap-1 px-2 py-0.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                      Proof Anchored
+                    </Badge>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 text-gray-400 font-mono text-sm">
                 {contract.address}

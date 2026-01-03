@@ -107,16 +107,16 @@ export default function Dashboard() {
             {userData?.recentActivity.length > 0 ? (
               <div className="divide-y divide-gray-700">
                 {userData.recentActivity.map((activity: any) => (
-                  <div key={activity.id} className="p-4 hover:bg-gray-700/30 transition-colors flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                  <div key={activity.id} className="p-4 hover:bg-gray-700/30 transition-colors flex items-center justify-between group">
+                    <Link href={`/contract/${activity.address}`} className="flex items-center gap-4 flex-1">
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:bg-blue-500/20 transition-colors">
                         <Github className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="font-medium text-white">{activity.name}</p>
+                        <p className="font-medium text-white group-hover:text-blue-400 transition-colors">{activity.name}</p>
                         <p className="text-xs text-gray-500 font-mono">{activity.address}</p>
                       </div>
-                    </div>
+                    </Link>
                     <div className="flex items-center gap-3">
                       {activity.verified_at && (
                         <Badge className="bg-green-500/10 text-green-400 border-green-500/20 gap-1">

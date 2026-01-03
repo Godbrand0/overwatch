@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { checkRWACompliance } from "@/lib/rwa";
 
 /**
  * Get contract details by address
@@ -22,7 +23,15 @@ export async function GET(
       return NextResponse.json({ error: "Contract not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ contract });
+    // Check RWA compliance
+    const rwaCompliance = checkRWACompliance(contract.abi);
+
+    return NextResponse.json({ 
+      contract: {
+        ...contract,
+        rwa_compliance: rwaCompliance
+      } 
+    });
   } catch (error: any) {
     console.error("Error fetching contract:", error);
     return NextResponse.json(

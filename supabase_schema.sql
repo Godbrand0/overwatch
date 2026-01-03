@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS contracts (
   name TEXT NOT NULL,
   abi JSONB NOT NULL,
   source_code TEXT,
+  rwa_proof JSONB, -- Stores the RWA Proof Manifest
   deployed_at TIMESTAMP DEFAULT NOW(),
   verified_at TIMESTAMP,
   UNIQUE(address, network)

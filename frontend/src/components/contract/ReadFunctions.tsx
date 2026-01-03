@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useReadContract } from "wagmi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,20 +33,26 @@ export function ReadFunctions({ abi, address }: ReadFunctionsProps) {
 function FunctionCard({ fn, address }: { fn: any; address: string }) {
   const [expanded, setExpanded] = useState(false);
   const [args, setArgs] = useState<Record<string, string>>({});
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  
+  // Prepare args array in correct order
+  const argsArray = fn.inputs.map((input: any) => args[input.name]);
+
+  const { data, error, isPending, refetch } = useReadContract({
+    address: address as `0x${string}`,
+    abi: [fn], // Minimal ABI with just this function
+    functionName: fn.name,
+    args: argsArray,
+    query: {
+      enabled: false, // Don't run automatically
+      retry: false,
+    }
+  });
 
   const handleRead = async () => {
-    setLoading(true);
     try {
-      // In a real app, we would use wagmi's useReadContract here
-      // For the MVP, we simulate the read
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setResult("Sample Result");
+      await refetch();
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -84,15 +91,24 @@ function FunctionCard({ fn, address }: { fn: any; address: string }) {
               size="sm"
               className="bg-blue-600 hover:bg-blue-700"
               onClick={handleRead}
-              disabled={loading}
+              disabled={isPending}
             >
-              {loading ? "Querying..." : "Query"}
+              {isPending ? "Querying..." : "Query"}
             </Button>
 
-            {result !== null && (
+            {error && (
+              <div className="mt-4 p-3 bg-red-900/20 rounded border border-red-900/50">
+                <p className="text-xs text-red-500 uppercase mb-1">Error</p>
+                <p className="font-mono text-sm text-red-400 break-all">{error.message}</p>
+              </div>
+            )}
+
+            {data !== undefined && data !== null && (
               <div className="mt-4 p-3 bg-gray-800 rounded border border-gray-700">
                 <p className="text-xs text-gray-500 uppercase mb-1">Result</p>
-                <p className="font-mono text-sm text-blue-400">{JSON.stringify(result)}</p>
+                <p className="font-mono text-sm text-blue-400 break-all">
+                  {typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data)}
+                </p>
               </div>
             )}
           </div>

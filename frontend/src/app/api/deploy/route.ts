@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       deployTxHash,
       contractAddress,
       constructorArgs,
+      rwaProof, // Extract rwaProof
       compilerVersion = "0.8.20",
       compileOnly = false,
     } = body;
@@ -53,18 +54,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Save contract to database using Supabase
-    const { data: contract, error: dbError } = await supabase
+    let insertData: any = {
+      user_id: userId,
+      address: contractAddress,
+      network: network,
+      name: contractName,
+      abi: compilationResult.abi,
+      source_code: sourceCode,
+    };
+
+    if (rwaProof) {
+      insertData.rwa_proof = rwaProof;
+    }
+
+    // Try insert with rwa_proof first
+    let { data: contract, error: dbError } = await supabase
       .from('contracts')
-      .insert({
-        user_id: userId,
-        address: contractAddress,
-        network: network,
-        name: contractName,
-        abi: compilationResult.abi,
-        source_code: sourceCode,
-      })
+      .insert(insertData)
       .select()
       .single();
+
+    // Fallback: If error is related to missing column, try without rwa_proof
+    if (dbError && dbError.message.includes("column \"rwa_proof\" of relation \"contracts\" does not exist")) {
+      console.warn("RWA Proof column missing, saving without proof.");
+      delete insertData.rwa_proof;
+      const retry = await supabase
+        .from('contracts')
+        .insert(insertData)
+        .select()
+        .single();
+      contract = retry.data;
+      dbError = retry.error;
+    }
 
     if (dbError) {
       console.error('Database error:', dbError);

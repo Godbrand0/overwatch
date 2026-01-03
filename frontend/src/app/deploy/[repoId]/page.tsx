@@ -8,11 +8,13 @@ import { DeploymentStatus } from "@/components/deploy/DeploymentStatus";
 import { CompilationError } from "@/components/deploy/CompilationError";
 import { DeployProgress, DeployStep } from "@/components/deploy/DeployProgress";
 import { GitHubRepo } from "@/types/github";
-import { Loader2, ArrowLeft, Rocket, ShieldCheck, Activity, Cpu, Send } from "lucide-react";
+import { Loader2, ArrowLeft, Rocket, ShieldCheck, Activity, Cpu, Send, TestTube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAccount, useDeployContract, useWaitForTransactionReceipt } from "wagmi";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { TestDashboard } from "@/components/deploy/TestDashboard";
+import { ProofWizard, RWAProof } from "@/components/deploy/ProofWizard";
 
 export default function DeployPage({ params }: { params: Promise<{ repoId: string }> }) {
   const { repoId } = use(params);
@@ -36,6 +38,14 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
   const [compiledData, setCompiledData] = useState<any>(null);
   const [deploymentData, setDeploymentData] = useState<any>(null);
 
+  // Test State
+  const [testing, setTesting] = useState(false);
+  const [testResults, setTestResults] = useState<any>(null);
+
+  // RWA Proof State
+  const [proofWizardOpen, setProofWizardOpen] = useState(false);
+  const [rwaProof, setRwaProof] = useState<RWAProof | null>(null);
+
   const [steps, setSteps] = useState<DeployStep[]>([
     { id: "compile", label: "Compiling Contract", status: "pending" },
     { id: "deploy", label: "Deploying to Mantle", status: "pending" },
@@ -46,6 +56,17 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
   const { isLoading: isConfirming, isSuccess: isConfirmed, data: receipt } = useWaitForTransactionReceipt({
     hash: deployHash,
   });
+
+  // Trigger Proof Wizard if RWA detected
+  useEffect(() => {
+    if (isCompiled && compiledData?.rwaCompliance?.isCompliant && !rwaProof) {
+      setProofWizardOpen(true);
+    }
+  }, [isCompiled, compiledData, rwaProof]);
+
+  const handleProofGenerate = (proof: RWAProof) => {
+    setRwaProof(proof);
+  };
 
   // Update deploy step when transaction is sent and confirming
   useEffect(() => {
@@ -79,6 +100,8 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     setDeploymentError(null);
     setCompiledData(null);
     setDeploymentData(null);
+    setTestResults(null); // Reset tests
+    setRwaProof(null); // Reset proof
     setSteps([
       { id: "compile", label: "Compiling Contract", status: "pending" },
       { id: "deploy", label: "Deploying to Mantle", status: "pending" },
@@ -132,6 +155,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
               deployTxHash: receipt.transactionHash,
               contractAddress,
               constructorArgs: compiledData.constructorArgs,
+              rwaProof, // Pass the proof to be saved
             }),
           });
 
@@ -160,7 +184,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
       }
     }
     handleConfirmation();
-  }, [isConfirmed, receipt, compiledData]);
+  }, [isConfirmed, receipt, compiledData, rwaProof]);
 
   const handleCompile = async () => {
     if (!selectedContract || !repo) return;
@@ -201,6 +225,61 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
       setCompilationError(err.message);
     } finally {
       setCompiling(false);
+    }
+  };
+
+  const handleRunTests = async () => {
+    if (!compiledData || !selectedContract) return;
+    
+    setTesting(true);
+    setTestResults(null);
+
+    try {
+      // For MVP, we assume a test file exists with standard naming convention
+      // In a real app, we'd let user select test file or auto-detect
+      const testFileName = selectedContract.replace(".sol", ".t.sol").replace("src/", "test/");
+      
+      // Try to fetch test file content
+      let testCode = "";
+      try {
+        const testResponse = await fetch(`/api/repos/${repoId}/file?path=${testFileName}`);
+        if (testResponse.ok) {
+          const testData = await testResponse.json();
+          testCode = testData.content;
+        }
+      } catch (e) {
+        console.log("No test file found");
+      }
+
+      // If no test file found, we can't run tests (or we could run a generic test)
+      if (!testCode) {
+        // For demo purposes, if no test file, we might want to show a message
+        // Or we could just try to run tests if the backend handles it differently
+        // But our backend expects testCode.
+        // Let's create a dummy test if none exists just to show the UI? No, that's misleading.
+        // We'll just alert for now.
+        alert("No matching test file found (expected " + testFileName + ")");
+        setTesting(false);
+        return;
+      }
+
+      const response = await fetch("/api/deploy/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceCode: compiledData.sourceCode,
+          contractName: compiledData.contractName,
+          testCode,
+        }),
+      });
+
+      const data = await response.json();
+      setTestResults(data);
+    } catch (err: any) {
+      console.error(err);
+      setTestResults({ error: err.message });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -375,6 +454,33 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
                       <div className="w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-blue-500">2</div>
                       <h2 className="text-2xl font-bold">Review & Configure</h2>
                     </div>
+                    
+                    {/* Test Runner Section */}
+                    <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-6 mb-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <TestTube className="w-5 h-5 text-purple-400" />
+                          Contract Tests
+                        </h3>
+                        {!testResults && (
+                          <Button 
+                            onClick={handleRunTests}
+                            disabled={testing}
+                            variant="outline"
+                            size="sm"
+                            className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                          >
+                            {testing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Run Tests
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {(testing || testResults) && (
+                        <TestDashboard results={testResults} isLoading={testing} />
+                      )}
+                    </div>
+
                     <ContractDetails 
                       abi={compiledData.abi}
                       bytecode={compiledData.bytecode}
@@ -412,6 +518,12 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
             </div>
           </div>
         </div>
+        
+        <ProofWizard 
+          isOpen={proofWizardOpen} 
+          onClose={() => setProofWizardOpen(false)}
+          onGenerate={handleProofGenerate}
+        />
       </div>
     </div>
   );
