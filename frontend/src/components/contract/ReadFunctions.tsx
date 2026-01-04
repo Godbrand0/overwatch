@@ -33,26 +33,47 @@ export function ReadFunctions({ abi, address }: ReadFunctionsProps) {
 function FunctionCard({ fn, address }: { fn: any; address: string }) {
   const [expanded, setExpanded] = useState(false);
   const [args, setArgs] = useState<Record<string, string>>({});
-  
-  // Prepare args array in correct order
-  const argsArray = fn.inputs.map((input: any) => args[input.name]);
+  const [shouldQuery, setShouldQuery] = useState(false);
+
+  // Prepare args array in correct order - only if function has inputs
+  const argsArray = fn.inputs.length > 0
+    ? fn.inputs.map((input: any) => {
+        const value = args[input.name];
+        if (!value) return undefined;
+
+        // Handle different types
+        if (input.type === 'address') return value as `0x${string}`;
+        if (input.type.includes('int')) return BigInt(value);
+        if (input.type === 'bool') return value.toLowerCase() === 'true';
+        if (input.type.includes('[]')) {
+          try {
+            return JSON.parse(value);
+          } catch {
+            return value.split(',').map(v => v.trim());
+          }
+        }
+        return value;
+      })
+    : undefined;
 
   const { data, error, isPending, refetch } = useReadContract({
     address: address as `0x${string}`,
-    abi: [fn], // Minimal ABI with just this function
+    abi: [fn],
     functionName: fn.name,
     args: argsArray,
     query: {
-      enabled: false, // Don't run automatically
-      retry: false,
+      enabled: shouldQuery,
+      retry: 2,
+      retryDelay: 1000,
     }
   });
 
   const handleRead = async () => {
+    setShouldQuery(true);
     try {
       await refetch();
     } catch (err) {
-      console.error(err);
+      console.error("Query error:", err);
     }
   };
 
