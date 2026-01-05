@@ -98,6 +98,18 @@ export function TestDashboard({ results, isLoading }: TestDashboardProps) {
             <Progress value={passRate} className="h-2" />
           </CardContent>
         </Card>
+
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Coverage</span>
+              <div className={`text-xs font-bold px-2 py-0.5 rounded ${results.coverage >= 80 ? 'bg-green-500/20 text-green-400' : results.coverage >= 50 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                {results.coverage?.toFixed(1)}%
+              </div>
+            </div>
+            <Progress value={results.coverage || 0} className="h-2" />
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="bg-gray-800/50 border-gray-700">

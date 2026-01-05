@@ -10,11 +10,13 @@ import { ShieldCheck, FileJson } from "lucide-react";
 
 export interface RWAProof {
   assetType: string;
+  assetId: string;
   custodian: string;
   nav: string;
   currency: string;
   redemptionTerms: string;
   timestamp: number;
+  manifestHash?: string;
 }
 
 interface ProofWizardProps {
@@ -30,10 +32,11 @@ export function ProofWizard({ isOpen, onClose, onGenerate }: ProofWizardProps) {
   });
 
   const handleSubmit = () => {
-    if (!formData.custodian || !formData.nav) return;
+    if (!formData.custodian || !formData.nav || !formData.assetId) return;
     
     const proof: RWAProof = {
       assetType: formData.assetType || "Treasury",
+      assetId: formData.assetId,
       custodian: formData.custodian,
       nav: formData.nav,
       currency: formData.currency || "USD",
@@ -78,15 +81,27 @@ export function ProofWizard({ isOpen, onClose, onGenerate }: ProofWizardProps) {
             </Select>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="custodian">Custodian / Trustee</Label>
-            <Input
-              id="custodian"
-              placeholder="e.g. Onyx Trust Co."
-              className="bg-gray-800 border-gray-700"
-              value={formData.custodian || ""}
-              onChange={(e) => setFormData({...formData, custodian: e.target.value})}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="assetId">Asset ID / Symbol</Label>
+              <Input
+                id="assetId"
+                placeholder="e.g. mTBILL"
+                className="bg-gray-800 border-gray-700"
+                value={formData.assetId || ""}
+                onChange={(e) => setFormData({...formData, assetId: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="custodian">Custodian / Trustee</Label>
+              <Input
+                id="custodian"
+                placeholder="e.g. Onyx Trust Co."
+                className="bg-gray-800 border-gray-700"
+                value={formData.custodian || ""}
+                onChange={(e) => setFormData({...formData, custodian: e.target.value})}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -99,6 +99,33 @@ export function ContractOverview({ contract }: ContractOverviewProps) {
               Gas Usage
             </Button>
           </div>
+
+          {contract.rwa_proof && (
+            <div className="pt-6 border-t border-gray-700/50 space-y-4">
+              <div className="flex items-center gap-2 text-blue-400">
+                <ShieldCheck className="w-5 h-5" />
+                <h3 className="font-bold">RWA Proof Manifest</h3>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                  <p className="text-[10px] uppercase text-gray-500 font-bold mb-1">Asset Type</p>
+                  <p className="text-sm text-gray-200">{contract.rwa_proof.assetType}</p>
+                </div>
+                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                  <p className="text-[10px] uppercase text-gray-500 font-bold mb-1">Custodian</p>
+                  <p className="text-sm text-gray-200">{contract.rwa_proof.custodian}</p>
+                </div>
+                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                  <p className="text-[10px] uppercase text-gray-500 font-bold mb-1">NAV / Value</p>
+                  <p className="text-sm text-gray-200">{contract.rwa_proof.nav} {contract.rwa_proof.currency}</p>
+                </div>
+              </div>
+              <div className="bg-blue-500/5 p-3 rounded-lg border border-blue-500/20">
+                <p className="text-[10px] uppercase text-blue-400/60 font-bold mb-1">Cryptographic Manifest Hash</p>
+                <code className="text-xs text-blue-300 font-mono break-all">{contract.rwa_proof.manifestHash}</code>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

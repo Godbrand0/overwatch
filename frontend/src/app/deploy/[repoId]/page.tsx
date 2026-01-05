@@ -12,6 +12,7 @@ import { Loader2, ArrowLeft, Rocket, ShieldCheck, Activity, Cpu, Send, TestTube 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAccount, useDeployContract, useWaitForTransactionReceipt } from "wagmi";
+import { keccak256, encodePacked } from "viem";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { TestDashboard } from "@/components/deploy/TestDashboard";
 import { ProofWizard, RWAProof } from "@/components/deploy/ProofWizard";
@@ -65,7 +66,23 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
   }, [isCompiled, compiledData, rwaProof]);
 
   const handleProofGenerate = (proof: RWAProof) => {
-    setRwaProof(proof);
+    // Generate manifest hash for cryptographic binding
+    const manifest = {
+      chain: "Mantle Sepolia",
+      deployer: address,
+      ...proof
+    };
+    
+    // Simple hash of the manifest data
+    const hash = keccak256(encodePacked(
+      ['string', 'string', 'string', 'string', 'string'],
+      [proof.assetId, proof.custodian, proof.nav, proof.assetType, address || ""]
+    ));
+    
+    setRwaProof({
+      ...proof,
+      manifestHash: hash
+    });
   };
 
   // Update deploy step when transaction is sent and confirming
@@ -156,6 +173,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
               contractAddress,
               constructorArgs: compiledData.constructorArgs,
               rwaProof, // Pass the proof to be saved
+              testResults, // Pass the test results to be saved
               deployedBlockNumber: Number(receipt.blockNumber), // Pass the block number
             }),
           });
@@ -332,6 +350,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
           sourceCode: deploymentData.sourceCode,
           contractName: deploymentData.contractName,
           constructorArgs: deploymentData.constructorArgs,
+          abi: deploymentData.abi,
           network: "testnet",
         }),
       });

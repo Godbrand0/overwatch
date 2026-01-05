@@ -2,6 +2,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import fs from "fs/promises";
 import path from "path";
+import { encodeAbiParameters } from "viem";
 
 const execAsync = promisify(exec);
 
@@ -204,10 +205,26 @@ via_ir = false
    * Encode constructor arguments
    */
   async encodeConstructorArgs(abi: any[], args: any[]): Promise<string> {
-    // This would use ethers or viem to encode
-    // For now, returning placeholder
-    // TODO: Implement actual encoding
-    return "0x";
+    if (!args || args.length === 0) return "";
+
+    try {
+      const constructor = abi.find((item) => item.type === "constructor");
+      if (!constructor || !constructor.inputs || constructor.inputs.length === 0) {
+        return "";
+      }
+
+      // Encode using viem
+      const encoded = encodeAbiParameters(
+        constructor.inputs,
+        args
+      );
+
+      // Remove 0x prefix for Etherscan
+      return encoded.replace("0x", "");
+    } catch (error) {
+      console.error("Failed to encode constructor arguments:", error);
+      return "";
+    }
   }
 
   /**
@@ -365,6 +382,27 @@ optimizer_runs = 200
         }
       }
 
+      // Run coverage to get detailed info
+      let coverage = 0;
+      try {
+        const { stdout: coverageStdout } = await execAsync(
+          `${this.foundryPath} coverage --root ${projectPath} --report summary`
+        );
+        
+        // Simple regex to find the coverage for our contract
+        // The table looks like: | src/ContractName.sol | 57.14% (8/14) | ...
+        const lines = coverageStdout.split('\n');
+        const contractLine = lines.find(line => line.includes(`src/${contractName}.sol`));
+        if (contractLine) {
+          const match = contractLine.match(/(\d+\.\d+)%/);
+          if (match) {
+            coverage = parseFloat(match[1]);
+          }
+        }
+      } catch (coverageError) {
+        console.error("Coverage execution failed:", coverageError);
+      }
+
       // Cleanup
       await this.cleanup(projectPath);
 
@@ -373,6 +411,7 @@ optimizer_runs = 200
         total,
         passed,
         failed,
+        coverage,
         results,
       };
 
@@ -397,7 +436,7 @@ export interface TestResult {
   total: number;
   passed: number;
   failed: number;
-  coverage?: number;
+  coverage: number;
   results: any[];
   error?: string;
 }

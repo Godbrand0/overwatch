@@ -42,6 +42,17 @@ export async function POST(request: NextRequest) {
       // Fallback to original source code if flattening fails
     }
 
+    // Encode constructor arguments if provided as an array
+    let encodedArgs = "";
+    if (Array.isArray(constructorArgs)) {
+      encodedArgs = await compiler.encodeConstructorArgs(
+        typeof body.abi === 'string' ? JSON.parse(body.abi) : body.abi || [],
+        constructorArgs
+      );
+    } else if (typeof constructorArgs === 'string') {
+      encodedArgs = constructorArgs.replace("0x", "");
+    }
+
     // Verify contract on block explorer
     const verifier = new VerificationService();
     const result = await verifier.verifyContract({
@@ -49,7 +60,7 @@ export async function POST(request: NextRequest) {
       sourceCode: flattenedSource,
       contractName,
       compilerVersion,
-      constructorArgs: typeof constructorArgs === 'string' ? constructorArgs : "",
+      constructorArgs: encodedArgs,
       network: network === 'mainnet' ? 'mainnet' : 'testnet',
     });
 

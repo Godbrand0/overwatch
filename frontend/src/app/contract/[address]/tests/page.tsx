@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { TestTube } from "lucide-react";
+import { TestDashboard } from "@/components/deploy/TestDashboard";
 
 export default function TestsPage({ params }: { params: Promise<{ address: string }> }) {
   const { address } = use(params);
@@ -40,12 +41,22 @@ export default function TestsPage({ params }: { params: Promise<{ address: strin
   }
 
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-12 text-center">
-      <TestTube className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-      <h3 className="text-xl font-semibold mb-2">Contract Tests</h3>
-      <p className="text-gray-400 max-w-md mx-auto">
-        No test results available for this contract. Run tests during deployment to see them here.
-      </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Contract Tests</h2>
+      </div>
+
+      {contract.test_results ? (
+        <TestDashboard results={contract.test_results} />
+      ) : (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-12 text-center">
+          <TestTube className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold mb-2">No Test Results</h3>
+          <p className="text-gray-400 max-w-md mx-auto">
+            No test results available for this contract. Run tests during deployment to see them here.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

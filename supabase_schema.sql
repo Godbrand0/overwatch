@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS contracts (
   deployed_at TIMESTAMP DEFAULT NOW(),
   deployed_block_number BIGINT, -- Block number when contract was deployed
   deploy_tx_hash TEXT, -- Transaction hash of the deployment
+  test_results JSONB, -- Stores Foundry test output
+  constructor_args JSONB, -- Stores constructor arguments
   verified_at TIMESTAMP,
   UNIQUE(address, network)
 );

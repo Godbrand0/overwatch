@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       contractAddress,
       constructorArgs,
       rwaProof, // Extract rwaProof
+      testResults, // Extract testResults
       deployedBlockNumber, // Block number from deployment
       compilerVersion = "0.8.20",
       compileOnly = false,
@@ -72,6 +73,14 @@ export async function POST(request: NextRequest) {
       insertData.deployed_block_number = deployedBlockNumber;
     }
 
+    if (testResults) {
+      insertData.test_results = testResults;
+    }
+
+    if (constructorArgs) {
+      insertData.constructor_args = constructorArgs;
+    }
+
     if (deployTxHash) {
       insertData.deploy_tx_hash = deployTxHash;
     }
@@ -83,10 +92,16 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    // Fallback: If error is related to missing column, try without rwa_proof
-    if (dbError && dbError.message.includes("column \"rwa_proof\" of relation \"contracts\" does not exist")) {
-      console.warn("RWA Proof column missing, saving without proof.");
+    // Fallback: If error is related to missing column, try without rwa_proof, test_results, or constructor_args
+    if (dbError && (
+      dbError.message.includes("column \"rwa_proof\" of relation \"contracts\" does not exist") ||
+      dbError.message.includes("column \"test_results\" of relation \"contracts\" does not exist") ||
+      dbError.message.includes("column \"constructor_args\" of relation \"contracts\" does not exist")
+    )) {
+      console.warn("RWA Proof, Test Results, or Constructor Args column missing, saving without them.");
       delete insertData.rwa_proof;
+      delete insertData.test_results;
+      delete insertData.constructor_args;
       const retry = await supabase
         .from('contracts')
         .insert(insertData)

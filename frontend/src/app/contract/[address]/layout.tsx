@@ -54,6 +54,8 @@ export default function ContractLayout({
           sourceCode: contract.source_code,
           contractName: contract.name,
           network: contract.network,
+          constructorArgs: contract.constructor_args,
+          abi: contract.abi,
         }),
       });
 
