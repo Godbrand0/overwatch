@@ -54,5 +54,12 @@ export default function HistoryPage({ params }: { params: Promise<{ address: str
     );
   }
 
-  return <TransactionHistory address={contract.address} abi={contract.abi} />;
+  return (
+    <TransactionHistory
+      address={contract.address}
+      abi={contract.abi}
+      deployedBlockNumber={contract.deployed_block_number}
+      deployTxHash={contract.deploy_tx_hash}
+    />
+  );
 }

@@ -95,7 +95,7 @@ export default function ContractLayout({
 
   return (
     <div className="min-h-screen bg-gray-900 text-white py-12">
-      <div className="container mx-auto px-4 space-y-8">
+      <div className="container mx-auto px-4 space-y-6">
         <ContractOverview contract={contract} />
 
         {!isVerified && (

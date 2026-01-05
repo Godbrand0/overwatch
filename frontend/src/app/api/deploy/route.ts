@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       contractAddress,
       constructorArgs,
       rwaProof, // Extract rwaProof
+      deployedBlockNumber, // Block number from deployment
       compilerVersion = "0.8.20",
       compileOnly = false,
     } = body;
@@ -65,6 +66,14 @@ export async function POST(request: NextRequest) {
 
     if (rwaProof) {
       insertData.rwa_proof = rwaProof;
+    }
+
+    if (deployedBlockNumber) {
+      insertData.deployed_block_number = deployedBlockNumber;
+    }
+
+    if (deployTxHash) {
+      insertData.deploy_tx_hash = deployTxHash;
     }
 
     // Try insert with rwa_proof first

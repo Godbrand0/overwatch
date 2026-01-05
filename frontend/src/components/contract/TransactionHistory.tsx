@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { History, ExternalLink, CheckCircle2, XCircle, Clock, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { usePublicClient } from "wagmi";
-import { formatEther } from "viem";
+import { formatEther, getFunctionSelector } from "viem";
 
 interface TransactionHistoryProps {
   address: string;
   abi: any[];
+  deployedBlockNumber?: number | string | null;
+  deployTxHash?: string | null;
 }
 
 interface Transaction {
@@ -23,9 +25,10 @@ interface Transaction {
   type: "incoming" | "outgoing" | "contract";
 }
 
-export function TransactionHistory({ address, abi }: TransactionHistoryProps) {
+export function TransactionHistory({ address, abi, deployedBlockNumber, deployTxHash }: TransactionHistoryProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchFromBlock, setSearchFromBlock] = useState<bigint | null>(null);
   const publicClient = usePublicClient();
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export function TransactionHistory({ address, abi }: TransactionHistoryProps) {
     // Poll for new transactions every 15 seconds
     const interval = setInterval(fetchTransactionHistory, 15000);
     return () => clearInterval(interval);
-  }, [address]);
+  }, [address, deployedBlockNumber]);
 
   const fetchTransactionHistory = async () => {
     try {
@@ -42,7 +45,13 @@ export function TransactionHistory({ address, abi }: TransactionHistoryProps) {
 
       // Get current block
       const currentBlock = await publicClient.getBlockNumber();
-      const fromBlock = currentBlock - BigInt(10000); // Last ~10k blocks
+
+      // Use deployed block number if available, otherwise fallback to last 10k blocks
+      const fromBlock = deployedBlockNumber
+        ? BigInt(deployedBlockNumber)
+        : currentBlock - BigInt(10000);
+      
+      setSearchFromBlock(fromBlock);
 
       // Fetch logs for this contract
       const logs = await publicClient.getLogs({
@@ -53,6 +62,29 @@ export function TransactionHistory({ address, abi }: TransactionHistoryProps) {
 
       // Process logs into transactions
       const txMap = new Map<string, Transaction>();
+
+      // Always try to fetch the deployment transaction if we have the hash
+      if (deployTxHash) {
+        try {
+          const tx = await publicClient.getTransaction({ hash: deployTxHash as `0x${string}` });
+          const receipt = await publicClient.getTransactionReceipt({ hash: deployTxHash as `0x${string}` });
+          const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
+
+          txMap.set(deployTxHash, {
+            hash: deployTxHash,
+            from: tx.from,
+            to: tx.to || address,
+            value: formatEther(tx.value),
+            timestamp: Number(block.timestamp),
+            blockNumber: Number(receipt.blockNumber),
+            functionName: "Contract Deployment",
+            status: receipt.status === "success" ? "success" : "failed",
+            type: "contract",
+          });
+        } catch (err) {
+          console.error("Error fetching deployment transaction:", err);
+        }
+      }
 
       for (const log of logs) {
         if (!txMap.has(log.transactionHash)) {
@@ -70,13 +102,18 @@ export function TransactionHistory({ address, abi }: TransactionHistoryProps) {
             });
 
             // Try to decode function name from input
-            let functionName = "Unknown";
+            let functionName = "Contract Interaction";
             if (tx.input && tx.input.length >= 10) {
               const selector = tx.input.slice(0, 10);
               const func = abi.find(
-                (item) =>
-                  item.type === "function" &&
-                  selector === `0x${item.name}` // This is a simple match, real implementation would hash
+                (item) => {
+                  if (item.type !== "function") return false;
+                  try {
+                    return getFunctionSelector(item) === selector;
+                  } catch {
+                    return false;
+                  }
+                }
               );
               if (func) functionName = func.name;
             }
@@ -132,7 +169,9 @@ export function TransactionHistory({ address, abi }: TransactionHistoryProps) {
         <History className="w-12 h-12 text-gray-600 mx-auto mb-4" />
         <h3 className="text-xl font-semibold mb-2">No Transactions Found</h3>
         <p className="text-gray-400 max-w-md mx-auto">
-          No transactions have been recorded for this contract in the last 10,000 blocks.
+          {deployedBlockNumber 
+            ? `No transactions have been recorded for this contract since its deployment at block ${deployedBlockNumber}.`
+            : "No transactions have been recorded for this contract in the last 10,000 blocks."}
         </p>
       </div>
     );
@@ -140,13 +179,18 @@ export function TransactionHistory({ address, abi }: TransactionHistoryProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
           <h3 className="text-xl font-semibold text-white">Transaction History</h3>
           <p className="text-sm text-gray-400 mt-1">
             {transactions.length} transaction{transactions.length !== 1 ? "s" : ""} found
           </p>
         </div>
+        {searchFromBlock && (
+          <div className="text-xs text-gray-500 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
+            Searching from block <span className="text-blue-400 font-mono">{searchFromBlock.toString()}</span> to <span className="text-blue-400 font-mono">latest</span>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">

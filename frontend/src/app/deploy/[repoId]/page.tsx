@@ -156,6 +156,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
               contractAddress,
               constructorArgs: compiledData.constructorArgs,
               rwaProof, // Pass the proof to be saved
+              deployedBlockNumber: Number(receipt.blockNumber), // Pass the block number
             }),
           });
 

@@ -59,6 +59,7 @@ export default function MonitoringPage({ params }: { params: Promise<{ address: 
       address={contract.address}
       abi={contract.abi}
       contractName={contract.name}
+      deployedBlockNumber={contract.deployed_block_number}
     />
   );
 }

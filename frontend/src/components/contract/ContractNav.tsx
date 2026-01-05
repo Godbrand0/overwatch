@@ -48,8 +48,8 @@ export function ContractNav({ address, isVerified }: ContractNavProps) {
   const basePath = `/contract/${address}`;
 
   return (
-    <nav className="bg-gray-800/50 border border-gray-700 rounded-xl p-2 mb-8">
-      <div className="flex items-center gap-2 overflow-x-auto">
+    <nav className="bg-gray-800/80 border-b border-gray-700 -mx-4 px-4 py-4 mb-8 backdrop-blur-sm">
+      <div className="flex items-center gap-1 overflow-x-auto">
         {navItems.map((item) => {
           const isActive = pathname === `${basePath}${item.href}`;
           const isLocked = item.requiresVerification && !isVerified;
@@ -60,17 +60,17 @@ export function ContractNav({ address, isVerified }: ContractNavProps) {
               key={item.href}
               href={isLocked ? "#" : `${basePath}${item.href}`}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all whitespace-nowrap",
+                "flex items-center gap-2 px-6 py-3 font-semibold transition-all whitespace-nowrap relative",
                 isActive && !isLocked
-                  ? "bg-blue-600 text-white shadow-lg"
+                  ? "text-blue-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-400"
                   : isLocked
-                  ? "bg-gray-700/30 text-gray-500 cursor-not-allowed"
-                  : "text-gray-300 hover:bg-gray-700/50 hover:text-white"
+                  ? "text-gray-600 cursor-not-allowed"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700/30"
               )}
               onClick={(e) => isLocked && e.preventDefault()}
             >
-              <Icon className="w-4 h-4" />
-              <span>{item.label}</span>
+              <Icon className="w-5 h-5" />
+              <span className="text-sm uppercase tracking-wide">{item.label}</span>
               {isLocked && (
                 <span className="ml-1 text-xs opacity-60">🔒</span>
               )}

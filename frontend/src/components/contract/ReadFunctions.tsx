@@ -33,7 +33,7 @@ export function ReadFunctions({ abi, address }: ReadFunctionsProps) {
 function FunctionCard({ fn, address }: { fn: any; address: string }) {
   const [expanded, setExpanded] = useState(false);
   const [args, setArgs] = useState<Record<string, string>>({});
-  const [shouldQuery, setShouldQuery] = useState(false);
+  const [isQuerying, setIsQuerying] = useState(false);
 
   // Prepare args array in correct order - only if function has inputs
   const argsArray = fn.inputs.length > 0
@@ -56,24 +56,24 @@ function FunctionCard({ fn, address }: { fn: any; address: string }) {
       })
     : undefined;
 
-  const { data, error, isPending, refetch } = useReadContract({
+  const { data, error, refetch } = useReadContract({
     address: address as `0x${string}`,
     abi: [fn],
     functionName: fn.name,
     args: argsArray,
     query: {
-      enabled: shouldQuery,
-      retry: 2,
-      retryDelay: 1000,
+      enabled: false, // Disable automatic querying
     }
   });
 
   const handleRead = async () => {
-    setShouldQuery(true);
+    setIsQuerying(true);
     try {
       await refetch();
     } catch (err) {
       console.error("Query error:", err);
+    } finally {
+      setIsQuerying(false);
     }
   };
 
@@ -112,9 +112,9 @@ function FunctionCard({ fn, address }: { fn: any; address: string }) {
               size="sm"
               className="bg-blue-600 hover:bg-blue-700"
               onClick={handleRead}
-              disabled={isPending}
+              disabled={isQuerying}
             >
-              {isPending ? "Querying..." : "Query"}
+              {isQuerying ? "Querying..." : "Query"}
             </Button>
 
             {error && (

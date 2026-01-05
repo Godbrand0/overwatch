@@ -10,6 +10,7 @@ interface ContractMonitoringProps {
   address: string;
   abi: any[];
   contractName?: string;
+  deployedBlockNumber?: number | null;
 }
 
 interface EventLog {
@@ -29,7 +30,7 @@ interface ContractStats {
   eventCount: number;
 }
 
-export function ContractMonitoring({ address, abi, contractName }: ContractMonitoringProps) {
+export function ContractMonitoring({ address, abi, contractName, deployedBlockNumber }: ContractMonitoringProps) {
   const [events, setEvents] = useState<EventLog[]>([]);
   const [stats, setStats] = useState<ContractStats>({
     totalTransactions: 0,
@@ -103,7 +104,11 @@ export function ContractMonitoring({ address, abi, contractName }: ContractMonit
       if (!publicClient) return;
 
       const currentBlock = await publicClient.getBlockNumber();
-      const fromBlock = currentBlock - BigInt(5000); // Last ~5k blocks
+
+      // Use deployed block number if available, otherwise fallback to last 5k blocks
+      const fromBlock = deployedBlockNumber
+        ? BigInt(deployedBlockNumber)
+        : currentBlock - BigInt(5000);
 
       // Fetch logs
       const logs = await publicClient.getLogs({
