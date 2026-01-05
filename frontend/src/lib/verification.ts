@@ -192,12 +192,9 @@ export class VerificationService {
 
   /**
    * Flatten Solidity source code
-   * (Required for verification)
+   * (Now handled by CompilerService)
    */
-  async flattenSource(sourcePath: string): Promise<string> {
-    // This would use forge flatten or similar
-    // For now, returning the source as-is
-    // TODO: Implement actual flattening
-    return "";
+  async flattenSource(sourceCode: string): Promise<string> {
+    return sourceCode;
   }
 }

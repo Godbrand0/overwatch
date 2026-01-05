@@ -211,6 +211,64 @@ via_ir = false
   }
 
   /**
+   * Flatten Solidity contract using Foundry
+   */
+  async flattenContract(
+    sourceCode: string,
+    contractName: string,
+    solcVersion: string = "0.8.20"
+  ): Promise<string> {
+    await this.initTempDir();
+
+    const projectId = `flatten_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(7)}`;
+    const projectPath = path.join(this.tempDir, projectId);
+
+    try {
+      // Create project structure
+      await fs.mkdir(path.join(projectPath, "src"), { recursive: true });
+
+      // Write source code
+      const contractPath = path.join(projectPath, "src", `${contractName}.sol`);
+      await fs.writeFile(contractPath, sourceCode);
+
+      // Resolve absolute path to local libs (assuming they are in ../contract/lib)
+      const libsDir = path.resolve(process.cwd(), "../contract/lib");
+
+      // Create foundry.toml with explicit remappings
+      const foundryConfig = `
+[profile.default]
+src = "src"
+out = "out"
+libs = ["${libsDir}"]
+remappings = [
+  "@openzeppelin/contracts/=${libsDir}/openzeppelin-contracts/contracts/",
+  "forge-std/=${libsDir}/forge-std/src/"
+]
+solc_version = "${solcVersion}"
+      `.trim();
+
+      await fs.writeFile(path.join(projectPath, "foundry.toml"), foundryConfig);
+
+      // Flatten with Foundry
+      const { stdout } = await execAsync(
+        `${this.foundryPath} flatten ${contractPath} --root ${projectPath}`
+      );
+
+      // Cleanup
+      await this.cleanup(projectPath);
+
+      return stdout;
+    } catch (error: any) {
+      // Cleanup on error
+      await this.cleanup(projectPath);
+      console.error("Flattening failed:", error);
+      throw new Error(error.message || "Flattening failed");
+    }
+  }
+
+  /**
    * Run Foundry tests
    */
   async runTests(

@@ -31,11 +31,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Flatten source code before verification
+    const compiler = new CompilerService();
+    let flattenedSource = sourceCode;
+    try {
+      flattenedSource = await compiler.flattenContract(sourceCode, contractName, compilerVersion);
+    } catch (flattenError) {
+      console.error("Failed to flatten source code for verification:", flattenError);
+      // Fallback to original source code if flattening fails
+    }
+
     // Verify contract on block explorer
     const verifier = new VerificationService();
     const result = await verifier.verifyContract({
       contractAddress,
-      sourceCode,
+      sourceCode: flattenedSource,
       contractName,
       compilerVersion,
       constructorArgs: typeof constructorArgs === 'string' ? constructorArgs : "",
