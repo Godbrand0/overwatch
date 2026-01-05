@@ -77,12 +77,16 @@ export class CompilerService {
       // Resolve absolute path to local libs (assuming they are in ../contract/lib)
       const libsDir = path.resolve(process.cwd(), "../contract/lib");
 
-      // Create foundry.toml
+      // Create foundry.toml with explicit remappings
       const foundryConfig = `
 [profile.default]
 src = "src"
 out = "out"
 libs = ["${libsDir}"]
+remappings = [
+  "@openzeppelin/contracts/=${libsDir}/openzeppelin-contracts/contracts/",
+  "forge-std/=${libsDir}/forge-std/src/"
+]
 solc_version = "${solcVersion}"
 optimizer = true
 optimizer_runs = 200
@@ -142,7 +146,7 @@ via_ir = false
       if (cleanError.includes("Error (")) {
         // Keep the specific Solidity error but remove the full command line noise
         const lines = cleanError.split('\n');
-        const errorLines = lines.filter(line => 
+        const errorLines = lines.filter((line: string) => 
           line.includes("Error (") || 
           line.includes("ParserError:") || 
           line.includes("-->") ||
@@ -214,13 +218,17 @@ via_ir = false
       // Resolve absolute path to local libs (assuming they are in ../contract/lib)
       const libsDir = path.resolve(process.cwd(), "../contract/lib");
 
-      // Create foundry.toml
+      // Create foundry.toml with explicit remappings
       const foundryConfig = `
 [profile.default]
 src = "src"
 test = "test"
 out = "out"
 libs = ["${libsDir}"]
+remappings = [
+  "@openzeppelin/contracts/=${libsDir}/openzeppelin-contracts/contracts/",
+  "forge-std/=${libsDir}/forge-std/src/"
+]
 solc_version = "0.8.20"
 optimizer = true
 optimizer_runs = 200
