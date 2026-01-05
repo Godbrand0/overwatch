@@ -9,7 +9,7 @@ pragma solidity ^0.8.20;
 contract SimpleToken {
     string public name;
     string public symbol;
-    uint8 public constant decimals = 18;
+    uint8 public constant DECIMALS = 18;
     uint256 public totalSupply;
 
     mapping(address => uint256) public balanceOf;
@@ -23,8 +23,12 @@ contract SimpleToken {
     event TokensBurned(address indexed from, uint256 amount);
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
+        _checkOwner();
         _;
+    }
+
+    function _checkOwner() internal view {
+        require(msg.sender == owner, "Not owner");
     }
 
     constructor(string memory _name, string memory _symbol) {
@@ -32,7 +36,7 @@ contract SimpleToken {
         symbol = _symbol;
         owner = msg.sender;
 
-        uint256 initialSupply = 1_000_000 * 10**decimals;
+        uint256 initialSupply = 1_000_000 * 10**DECIMALS;
         totalSupply = initialSupply;
         balanceOf[msg.sender] = initialSupply;
 
@@ -110,6 +114,6 @@ contract SimpleToken {
         uint256 supply,
         uint8 tokenDecimals
     ) {
-        return (name, symbol, totalSupply, decimals);
+        return (name, symbol, totalSupply, DECIMALS);
     }
 }

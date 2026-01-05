@@ -56,7 +56,7 @@ contract MantleRWAAsset is ERC20, Ownable {
     /**
      * @dev Custom RWA Keyword: nav
      */
-    function updateNAV(uint256 _newNAV) external onlyOwner {
+    function updateNav(uint256 newNav) external onlyOwner {
         // Logic for updating Net Asset Value
     }
 

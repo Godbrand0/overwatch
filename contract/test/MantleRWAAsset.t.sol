@@ -58,7 +58,7 @@ contract MantleRWAAssetTest is Test {
         vm.startPrank(owner);
         // This function doesn't return anything or change state in the current mock, 
         // but we test that it doesn't revert for owner.
-        asset.updateNAV(1000000);
+        asset.updateNav(1000000);
         vm.stopPrank();
     }
 }

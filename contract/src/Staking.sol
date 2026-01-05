@@ -13,7 +13,7 @@ interface IERC20 {
  * Perfect for demonstrating MantleForge's monitoring capabilities
  */
 contract Staking {
-    IERC20 public immutable stakingToken;
+    IERC20 public immutable STAKING_TOKEN;
     address public owner;
     uint256 public rewardRate; // Rewards per second per token
     uint256 public lastUpdateTime;
@@ -30,11 +30,20 @@ contract Staking {
     event RewardRateUpdated(uint256 newRate);
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
+        _checkOwner();
         _;
     }
 
+    function _checkOwner() internal view {
+        require(msg.sender == owner, "Not owner");
+    }
+
     modifier updateReward(address account) {
+        _updateReward(account);
+        _;
+    }
+
+    function _updateReward(address account) internal {
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = block.timestamp;
 
@@ -42,13 +51,20 @@ contract Staking {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
         }
-        _;
     }
 
     modifier nonReentrant() {
+        _nonReentrantBefore();
+        _;
+        _nonReentrantAfter();
+    }
+
+    function _nonReentrantBefore() internal {
         require(!_locked, "No reentrancy");
         _locked = true;
-        _;
+    }
+
+    function _nonReentrantAfter() internal {
         _locked = false;
     }
 
@@ -56,7 +72,7 @@ contract Staking {
 
     constructor(address _stakingToken, uint256 _rewardRate) {
         require(_stakingToken != address(0), "Invalid token address");
-        stakingToken = IERC20(_stakingToken);
+        STAKING_TOKEN = IERC20(_stakingToken);
         rewardRate = _rewardRate;
         lastUpdateTime = block.timestamp;
         owner = msg.sender;
@@ -94,7 +110,7 @@ contract Staking {
         totalStaked += amount;
         stakedBalance[msg.sender] += amount;
 
-        require(stakingToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+        require(STAKING_TOKEN.transferFrom(msg.sender, address(this), amount), "Transfer failed");
         emit Staked(msg.sender, amount);
     }
 
@@ -108,7 +124,7 @@ contract Staking {
         totalStaked -= amount;
         stakedBalance[msg.sender] -= amount;
 
-        require(stakingToken.transfer(msg.sender, amount), "Transfer failed");
+        require(STAKING_TOKEN.transfer(msg.sender, amount), "Transfer failed");
         emit Unstaked(msg.sender, amount);
     }
 
@@ -120,7 +136,7 @@ contract Staking {
         require(reward > 0, "No rewards available");
 
         rewards[msg.sender] = 0;
-        require(stakingToken.transfer(msg.sender, reward), "Transfer failed");
+        require(STAKING_TOKEN.transfer(msg.sender, reward), "Transfer failed");
 
         emit RewardPaid(msg.sender, reward);
     }
