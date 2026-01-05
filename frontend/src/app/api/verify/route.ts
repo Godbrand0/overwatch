@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { VerificationService } from "@/lib/verification";
+import { CompilerService } from "@/lib/compiler";
 
 /**
  * Verify contract on block explorer
