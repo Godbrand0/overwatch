@@ -197,6 +197,15 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     try {
       const sourceResponse = await fetch(`/api/repos/${repoId}/file?path=${selectedContract}`);
       const sourceData = await sourceResponse.json();
+      
+      if (!sourceResponse.ok) {
+        throw new Error(sourceData.error || "Failed to fetch contract source code");
+      }
+
+      if (!sourceData.content) {
+        throw new Error("Contract source code is empty or could not be retrieved");
+      }
+
       const contractName = selectedContract.split("/").pop()?.replace(".sol", "");
 
       const compileResponse = await fetch("/api/deploy", {

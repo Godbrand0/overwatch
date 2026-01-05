@@ -58,6 +58,29 @@ export class CompilerService {
     contractName: string,
     solcVersion: string = "0.8.20"
   ): Promise<CompilationResult> {
+    if (!sourceCode) {
+      return {
+        success: false,
+        abi: [],
+        bytecode: "",
+        contractName: contractName || "Unknown",
+        compilerVersion: solcVersion,
+        sourceCode: "",
+        error: "Source code is required for compilation",
+      };
+    }
+
+    if (!contractName) {
+      return {
+        success: false,
+        abi: [],
+        bytecode: "",
+        contractName: "Unknown",
+        compilerVersion: solcVersion,
+        sourceCode,
+        error: "Contract name is required for compilation",
+      };
+    }
     await this.initTempDir();
 
     const projectId = `compile_${Date.now()}_${Math.random()
@@ -195,6 +218,16 @@ via_ir = false
     contractName: string,
     testCode: string
   ): Promise<TestResult> {
+    if (!sourceCode || !contractName || !testCode) {
+      return {
+        success: false,
+        total: 0,
+        passed: 0,
+        failed: 0,
+        results: [],
+        error: "Source code, contract name, and test code are required for testing",
+      };
+    }
     await this.initTempDir();
 
     const projectId = `test_${Date.now()}_${Math.random()
