@@ -74,12 +74,15 @@ export class CompilerService {
       const contractPath = path.join(projectPath, "src", `${contractName}.sol`);
       await fs.writeFile(contractPath, sourceCode);
 
+      // Resolve absolute path to local libs (assuming they are in ../contract/lib)
+      const libsDir = path.resolve(process.cwd(), "../contract/lib");
+
       // Create foundry.toml
       const foundryConfig = `
 [profile.default]
 src = "src"
 out = "out"
-libs = ["lib"]
+libs = ["${libsDir}"]
 solc_version = "${solcVersion}"
 optimizer = true
 optimizer_runs = 200
@@ -89,9 +92,20 @@ via_ir = false
       await fs.writeFile(path.join(projectPath, "foundry.toml"), foundryConfig);
 
       // Compile with Foundry
-      const { stdout, stderr } = await execAsync(
-        `${this.foundryPath} build --root ${projectPath} --force`
-      );
+      try {
+        const { stdout, stderr } = await execAsync(
+          `${this.foundryPath} build --root ${projectPath} --force`
+        );
+      } catch (execError: any) {
+        // Extract a cleaner error message from forge output
+        let errorMessage = execError.message;
+        if (execError.stderr) {
+          errorMessage = execError.stderr;
+        } else if (execError.stdout) {
+          errorMessage = execError.stdout;
+        }
+        throw new Error(errorMessage);
+      }
 
       // Read compilation output
       const artifactPath = path.join(
@@ -121,6 +135,24 @@ via_ir = false
       // Cleanup on error
       await this.cleanup(projectPath);
 
+      // Clean up the error message to be more user-friendly
+      let cleanError = error.message || "Compilation failed";
+      
+      // If it's a forge error, try to make it more readable
+      if (cleanError.includes("Error (")) {
+        // Keep the specific Solidity error but remove the full command line noise
+        const lines = cleanError.split('\n');
+        const errorLines = lines.filter(line => 
+          line.includes("Error (") || 
+          line.includes("ParserError:") || 
+          line.includes("-->") ||
+          line.trim().startsWith("|")
+        );
+        if (errorLines.length > 0) {
+          cleanError = errorLines.join('\n');
+        }
+      }
+
       return {
         success: false,
         abi: [],
@@ -128,7 +160,7 @@ via_ir = false
         contractName,
         compilerVersion: solcVersion,
         sourceCode,
-        error: error.message || "Compilation failed",
+        error: cleanError,
       };
     }
   }
