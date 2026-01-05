@@ -79,7 +79,7 @@ export default function ContractLayout({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 py-12">
+      <div className="min-h-screen bg-gray-900 py-8">
         <div className="container mx-auto px-4">
           <Alert variant="destructive" className="bg-red-900/20 border-red-900/50">
             <AlertCircle className="h-4 w-4" />
@@ -94,7 +94,7 @@ export default function ContractLayout({
   const isVerified = !!contract.verified_at;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white py-12">
+    <div className="min-h-screen bg-gray-900 text-white pb-12">
       <div className="container mx-auto px-4 space-y-6">
         <ContractOverview contract={contract} />
 

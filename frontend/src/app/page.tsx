@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-20">
+      <div className="container mx-auto px-4 py-12 md:py-20">
         <div className="text-center max-w-4xl mx-auto">
           <h1 className="text-6xl font-bold mb-6 bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-purple-600">
             Deploy to Mantle in One Click

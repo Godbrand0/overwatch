@@ -44,23 +44,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-            MantleForge
-          </Link>
-          <div className="flex items-center gap-4">
-            {userData?.user && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-full border border-gray-700">
-                <img src={userData.user.avatar_url} alt={userData.user.github_username} className="w-6 h-6 rounded-full" />
-                <span className="text-sm font-medium">{userData.user.github_username}</span>
-              </div>
-            )}
-            <ConnectButton />
-          </div>
-        </div>
-      </header>
-
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
