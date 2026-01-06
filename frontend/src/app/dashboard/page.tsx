@@ -87,12 +87,12 @@ export default function Dashboard() {
           <DashboardCard
             title="Total Contracts"
             value={userData?.stats.totalContracts.toString() || "0"}
-            description="Deployed contracts"
+            description="Deployed on platform"
           />
           <DashboardCard
-            title="Active Deployments"
-            value={userData?.stats.activeDeployments.toString() || "0"}
-            description="Currently deploying"
+            title="RWA Contracts"
+            value={userData?.stats.rwaContracts.toString() || "0"}
+            description="Real World Assets"
           />
           <DashboardCard
             title="Verified Contracts"

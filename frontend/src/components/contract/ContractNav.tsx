@@ -25,7 +25,7 @@ const navItems = [
   },
   {
     href: "/rwa",
-    label: "RWA Compliance",
+    label: "Compliance",
     icon: ShieldCheck,
     requiresVerification: false,
   },

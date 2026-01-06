@@ -31,7 +31,7 @@ export async function GET(
     }
 
     // Check RWA compliance
-    const rwaCompliance = checkRWACompliance(contract.abi);
+    const rwaCompliance = checkRWACompliance(contract.abi, contract.name, contract.is_anchored);
 
     return NextResponse.json({ 
       contract: {

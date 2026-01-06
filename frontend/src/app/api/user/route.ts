@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { checkRWACompliance } from "@/lib/rwa";
 
 /**
  * Get current user data and contract stats
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     // Get contract stats
     const { data: contracts, error: contractsError } = await supabase
       .from('contracts')
-      .select('id, verified_at')
+      .select('id, verified_at, rwa_proof, abi, name')
       .eq('user_id', userId);
 
     if (contractsError) {
@@ -40,6 +41,9 @@ export async function GET(request: NextRequest) {
 
     const totalContracts = contracts?.length || 0;
     const verifiedContracts = contracts?.filter(c => c.verified_at).length || 0;
+    const rwaContracts = contracts?.filter(c => 
+      c.rwa_proof || (c.abi && checkRWACompliance(c.abi, c.name).isCompliant)
+    ).length || 0;
 
     // Get recent activity (last 5 contracts)
     const { data: recentActivity, error: activityError } = await supabase
@@ -61,8 +65,8 @@ export async function GET(request: NextRequest) {
       },
       stats: {
         totalContracts,
+        rwaContracts,
         verifiedContracts,
-        activeDeployments: 0, // Placeholder for now
       },
       recentActivity: recentActivity || [],
     });

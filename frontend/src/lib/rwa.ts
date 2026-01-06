@@ -10,13 +10,34 @@ export interface RWAComplianceReport {
   standard?: "ERC-3643" | "ERC-1400" | "Custom RWA";
 }
 
-export function checkRWACompliance(abi: any[]): RWAComplianceReport {
+export function checkRWACompliance(abi: any[], contractName?: string, isAnchored?: boolean): RWAComplianceReport {
+  if (isAnchored) {
+    return {
+      isCompliant: true,
+      confidence: 1.0,
+      detectedFeatures: ["Verified RWA Anchor (On-chain Trust Layer)"],
+      standard: "Custom RWA"
+    };
+  }
+
   if (!abi || !Array.isArray(abi)) {
     return { isCompliant: false, confidence: 0, detectedFeatures: [] };
   }
 
   const features: string[] = [];
   let score = 0;
+
+  // 0. Contract Name Analysis - Medium Weight
+  if (contractName) {
+    const nameLower = contractName.toLowerCase();
+    if (nameLower.includes("rwa")) {
+      features.push(`Contract Name contains "RWA": ${contractName}`);
+      score += 0.4; // Strong signal
+    } else if (nameLower.includes("asset") || nameLower.includes("token")) {
+      // Subtle signal, but not enough on its own
+      score += 0.05;
+    }
+  }
 
   // 1. ERC-3643 (T-REX) Detection - High Weight
   const erc3643Signatures = [

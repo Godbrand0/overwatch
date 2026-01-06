@@ -299,6 +299,7 @@ solc_version = "${solcVersion}"
         total: 0,
         passed: 0,
         failed: 0,
+        coverage: 0,
         results: [],
         error: "Source code, contract name, and test code are required for testing",
       };
@@ -427,6 +428,7 @@ optimizer_runs = 200
         total: 0,
         passed: 0,
         failed: 0,
+        coverage: 0,
         results: [],
         error: error.message || "Test execution failed",
       };
