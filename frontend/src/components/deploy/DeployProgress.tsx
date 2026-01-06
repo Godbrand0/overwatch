@@ -10,6 +10,7 @@ export interface DeployStep {
   label: string;
   status: DeployStepStatus;
   error?: string;
+  link?: string;
 }
 
 interface DeployProgressProps {
@@ -54,14 +55,28 @@ export function DeployProgress({ steps }: DeployProgressProps) {
             )}
           </div>
           <div className="pt-1">
-            <p
-              className={cn(
-                "font-medium",
-                step.status === "pending" ? "text-gray-500" : "text-white"
-              )}
-            >
-              {step.label}
-            </p>
+            {step.link ? (
+              <a 
+                href={step.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "font-medium hover:underline block",
+                  step.status === "pending" ? "text-gray-500" : "text-white"
+                )}
+              >
+                {step.label}
+              </a>
+            ) : (
+              <p
+                className={cn(
+                  "font-medium",
+                  step.status === "pending" ? "text-gray-500" : "text-white"
+                )}
+              >
+                {step.label}
+              </p>
+            )}
             {step.error && (
               <p className="text-sm text-red-400 mt-1">{step.error}</p>
             )}

@@ -9,6 +9,7 @@ import { CompilationError } from "@/components/deploy/CompilationError";
 import { DeployProgress, DeployStep } from "@/components/deploy/DeployProgress";
 import { GitHubRepo } from "@/types/github";
 import { Loader2, ArrowLeft, Rocket, ShieldCheck, Activity, Cpu, Send, TestTube } from "lucide-react";
+import { formatTransactionError } from "@/lib/error-handler";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAccount, useDeployContract, useWaitForTransactionReceipt } from "wagmi";
@@ -89,7 +90,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
   useEffect(() => {
     if (deployHash && isConfirming) {
       const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${deployHash}`;
-      updateStep("deploy", "loading", `Confirming transaction... [View on Explorer](${explorerUrl})`);
+      updateStep("deploy", "loading", undefined, explorerUrl, "Confirming transaction...");
     }
   }, [deployHash, isConfirming]);
 
@@ -129,8 +130,9 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
   // Handle deployment error (e.g. user rejected)
   useEffect(() => {
     if (deployError) {
-      updateStep("deploy", "error", deployError.message);
-      setDeploymentError(deployError.message);
+      const formattedError = formatTransactionError(deployError);
+      updateStep("deploy", "error", formattedError);
+      setDeploymentError(formattedError);
       setDeploymentStatus("error");
       setDeploying(false);
     }
@@ -158,7 +160,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
             return;
           }
 
-          updateStep("deploy", "success");
+          updateStep("deploy", "success", undefined, undefined, "Contract Deployed");
 
           // Save to DB
           const saveResponse = await fetch("/api/deploy", {
@@ -179,6 +181,12 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
           });
 
           const saveData = await saveResponse.json();
+          if (!saveResponse.ok) {
+            console.error("Failed to save contract to DB:", saveData.error);
+            throw new Error(saveData.error || "Failed to save contract to database");
+          }
+
+          console.log("Contract saved successfully:", contractAddress);
 
           setDeploymentData({
             contractAddress,
@@ -247,7 +255,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
         contractName,
       });
       setIsCompiled(true);
-      updateStep("compile", "success");
+      updateStep("compile", "success", undefined, undefined, "Contract Compiled");
     } catch (err: any) {
       updateStep("compile", "error", err.message);
       setCompilationError(err.message);
@@ -279,14 +287,16 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
         console.log("No test file found");
       }
 
-      // If no test file found, we can't run tests (or we could run a generic test)
+      // If no test file found, we can't run tests
       if (!testCode) {
-        // For demo purposes, if no test file, we might want to show a message
-        // Or we could just try to run tests if the backend handles it differently
-        // But our backend expects testCode.
-        // Let's create a dummy test if none exists just to show the UI? No, that's misleading.
-        // We'll just alert for now.
-        alert("No matching test file found (expected " + testFileName + ")");
+        setTestResults({ 
+          error: `No matching test file found (expected ${testFileName})`,
+          success: false,
+          total: 0,
+          passed: 0,
+          failed: 0,
+          results: []
+        });
         setTesting(false);
         return;
       }
@@ -341,6 +351,22 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     setVerifying(true);
     updateStep("verify", "loading");
 
+    // Before making the request, ensure all deploymentData fields are valid and present
+    if (!deploymentData || !deploymentData.contractAddress || !deploymentData.sourceCode || !deploymentData.contractName) {
+      const missingFields = [];
+      if (!deploymentData) missingFields.push("deploymentData");
+      else {
+        if (!deploymentData.contractAddress) missingFields.push("contractAddress");
+        if (!deploymentData.sourceCode) missingFields.push("sourceCode");
+        if (!deploymentData.contractName) missingFields.push("contractName");
+      }
+      const errorMsg = `Missing required deployment data for verification: ${missingFields.join(", ")}`;
+      console.error(errorMsg);
+      updateStep("verify", "error", errorMsg);
+      setVerifying(false);
+      return;
+    }
+
     try {
       const verifyResponse = await fetch("/api/verify", {
         method: "POST",
@@ -349,29 +375,35 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
           contractAddress: deploymentData.contractAddress,
           sourceCode: deploymentData.sourceCode,
           contractName: deploymentData.contractName,
-          constructorArgs: deploymentData.constructorArgs,
+          constructorArgs: deploymentData.constructorArgs || [],
           abi: deploymentData.abi,
           network: "testnet",
         }),
       });
 
       const verifyData = await verifyResponse.json();
-      if (!verifyResponse.ok) throw new Error(verifyData.error || "Verification failed");
+      
+      if (!verifyResponse.ok) {
+        // Log the exact error message from the server for debugging
+        console.error("Server responded with 400 Bad Request:", verifyData.error);
+        throw new Error(verifyData.error || "Verification failed: Unknown server error");
+      }
 
-      updateStep("verify", "success");
+      updateStep("verify", "success", undefined, undefined, "Contract Verified");
       setTimeout(() => {
         router.push(`/contract/${deploymentData.contractAddress}`);
       }, 2000);
     } catch (err: any) {
+      console.error("Verification error details:", err);
       updateStep("verify", "error", err.message);
     } finally {
       setVerifying(false);
     }
   };
 
-  const updateStep = (id: string, status: DeployStep["status"], error?: string) => {
+  const updateStep = (id: string, status: DeployStep["status"], error?: string, link?: string, label?: string) => {
     setSteps(prev => prev.map(step => 
-      step.id === id ? { ...step, status, error } : step
+      step.id === id ? { ...step, status, error, link, label: label || step.label } : step
     ));
   };
 

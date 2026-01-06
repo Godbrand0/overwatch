@@ -100,7 +100,7 @@ export class VerificationService {
           compilerversion: compilerVersion,
           optimizationUsed: "1",
           runs: "200",
-          constructorArguements: params.constructorArgs || "",
+          constructorArguments: params.constructorArgs || "",
         }),
         {
           headers: {
@@ -108,6 +108,8 @@ export class VerificationService {
           },
         }
       );
+
+      console.log("Explorer verification response:", response.data);
 
       if (response.data.status === "1") {
         const guid = response.data.result;
@@ -148,8 +150,8 @@ export class VerificationService {
     const chainId = this.getChainId(network);
 
     try {
-      // Poll for verification result (max 10 attempts, 3s interval)
-      for (let i = 0; i < 10; i++) {
+      // Poll for verification result (max 40 attempts, 3s interval = 2 minutes)
+      for (let i = 0; i < 40; i++) {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const response = await axios.get(`${apiUrl}`, {
@@ -162,12 +164,14 @@ export class VerificationService {
           },
         });
 
+        console.log("Explorer status check response:", response.data);
+
         const result = response.data.result;
 
-        if (result === "Pass - Verified") {
+        if (result === "Pass - Verified" || result === "Already Verified") {
           return {
             success: true,
-            message: "Contract verified successfully",
+            message: result === "Already Verified" ? "Contract is already verified" : "Contract verified successfully",
           };
         } else if (result.includes("Fail")) {
           return {

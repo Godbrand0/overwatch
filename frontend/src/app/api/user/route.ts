@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    console.log("Fetching dashboard data for user:", userId);
+
     // Get contract stats
     const { data: contracts, error: contractsError } = await supabase
       .from('contracts')
@@ -31,19 +33,25 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId);
 
     if (contractsError) {
-      console.error("Error fetching contracts:", contractsError);
+      console.error("Error fetching contracts for stats:", userId, contractsError);
     }
+
+    console.log(`Found ${contracts?.length || 0} contracts for user ${userId}`);
 
     const totalContracts = contracts?.length || 0;
     const verifiedContracts = contracts?.filter(c => c.verified_at).length || 0;
 
     // Get recent activity (last 5 contracts)
-    const { data: recentActivity } = await supabase
+    const { data: recentActivity, error: activityError } = await supabase
       .from('contracts')
       .select('*')
       .eq('user_id', userId)
       .order('deployed_at', { ascending: false })
       .limit(5);
+
+    if (activityError) {
+      console.error("Error fetching recent activity:", userId, activityError);
+    }
 
     return NextResponse.json({
       user: {

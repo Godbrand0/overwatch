@@ -6,8 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronDown, ChevronUp, Send, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Send, Loader2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatTransactionError } from "@/lib/error-handler";
 
 interface WriteFunctionsProps {
   abi: any[];
@@ -110,29 +111,37 @@ function FunctionCard({ fn, address }: { fn: any; address: string }) {
             {error && (
               <div className="mt-4 p-3 bg-red-900/20 rounded border border-red-900/50">
                 <p className="text-xs text-red-500 uppercase mb-1">Error</p>
-                <p className="font-mono text-sm text-red-400 break-all">{error.message}</p>
+                <p className="font-mono text-sm text-red-400 break-all">{formatTransactionError(error)}</p>
               </div>
             )}
 
-            {hash && (
-              <div className="mt-4 p-3 bg-gray-800 rounded border border-gray-700">
-                <p className="text-xs text-gray-500 uppercase mb-1">Transaction Hash</p>
-                <a 
-                  href={`https://sepolia.mantlescan.xyz/tx/${hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-xs text-orange-400 break-all hover:underline"
-                >
-                  {hash}
-                </a>
-                {isConfirmed && (
-                  <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    Confirmed
-                  </p>
+                {isConfirming && hash && (
+                  <a 
+                    href={`https://sepolia.mantlescan.xyz/tx/${hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 p-3 bg-orange-900/20 rounded border border-orange-900/50 flex items-center gap-2 hover:bg-orange-900/30 transition-colors group"
+                  >
+                    <Loader2 className="w-4 h-4 text-orange-400 animate-spin" />
+                    <span className="text-sm text-orange-400 group-hover:underline">Confirming transaction...</span>
+                    <ExternalLink className="w-3 h-3 text-orange-400 ml-auto opacity-50 group-hover:opacity-100" />
+                  </a>
                 )}
-              </div>
-            )}
+
+                {isConfirmed && hash && (
+                  <div className="mt-4 p-3 bg-green-900/20 rounded border border-green-900/50">
+                    <p className="text-xs text-green-500 uppercase mb-1">Transaction Confirmed</p>
+                    <a 
+                      href={`https://sepolia.mantlescan.xyz/tx/${hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-green-400 break-all hover:underline flex items-center gap-1"
+                    >
+                      {hash}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
           </div>
         </CardContent>
       )}

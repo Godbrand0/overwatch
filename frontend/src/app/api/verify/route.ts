@@ -25,6 +25,15 @@ export async function POST(request: NextRequest) {
       network = "testnet",
     } = body;
 
+    console.log("Verification request body:", {
+      contractAddress,
+      contractName,
+      compilerVersion,
+      network,
+      hasSourceCode: !!sourceCode,
+      constructorArgsCount: Array.isArray(constructorArgs) ? constructorArgs.length : 'N/A'
+    });
+
     if (!contractAddress || !sourceCode || !contractName) {
       return NextResponse.json(
         { error: "Missing required fields: contractAddress, sourceCode, contractName" },
@@ -63,6 +72,8 @@ export async function POST(request: NextRequest) {
       constructorArgs: encodedArgs,
       network: network === 'mainnet' ? 'mainnet' : 'testnet',
     });
+    
+    console.log("Verification result:", result);
 
     if (!result.success) {
       return NextResponse.json(
@@ -75,7 +86,7 @@ export async function POST(request: NextRequest) {
     const { error: dbError } = await supabase
       .from('contracts')
       .update({ verified_at: new Date().toISOString() })
-      .eq('address', contractAddress)
+      .eq('address', contractAddress.trim().toLowerCase())
       .eq('user_id', userId);
 
     if (dbError) {

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronDown, ChevronUp, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatTransactionError } from "@/lib/error-handler";
 
 interface ReadFunctionsProps {
   abi: any[];
@@ -120,7 +121,7 @@ function FunctionCard({ fn, address }: { fn: any; address: string }) {
             {error && (
               <div className="mt-4 p-3 bg-red-900/20 rounded border border-red-900/50">
                 <p className="text-xs text-red-500 uppercase mb-1">Error</p>
-                <p className="font-mono text-sm text-red-400 break-all">{error.message}</p>
+                <p className="font-mono text-sm text-red-400 break-all">{formatTransactionError(error)}</p>
               </div>
             )}
 

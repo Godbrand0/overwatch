@@ -13,14 +13,21 @@ export async function GET(
   const { address } = await params;
 
   try {
+    console.log("Fetching contract details for address:", address.trim().toLowerCase());
+
     const { data: contract, error } = await supabase
       .from("contracts")
       .select("*")
-      .eq("address", address)
+      .eq("address", address.trim().toLowerCase())
       .single();
 
     if (error || !contract) {
-      return NextResponse.json({ error: "Contract not found" }, { status: 404 });
+      console.error("Contract not found in DB:", address.trim().toLowerCase(), error);
+      return NextResponse.json({ 
+        error: "Contract not found",
+        details: error?.message,
+        code: error?.code
+      }, { status: 404 });
     }
 
     // Check RWA compliance

@@ -31,6 +31,23 @@ export async function POST(request: NextRequest) {
       compileOnly = false,
     } = body;
 
+    console.log("Deployment API called for user:", userId);
+
+    // Verify user exists in DB
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      console.error("User not found in DB during deployment:", userId, userError);
+      return NextResponse.json(
+        { error: "User not found in database. Please re-login." },
+        { status: 401 }
+      );
+    }
+
     // Compile contract
     const compiler = new CompilerService();
     const compilationResult = await compiler.compileContract(
@@ -58,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Save contract to database using Supabase
     let insertData: any = {
       user_id: userId,
-      address: contractAddress,
+      address: contractAddress.trim().toLowerCase(),
       network: network,
       name: contractName,
       abi: compilationResult.abi,
@@ -85,26 +102,37 @@ export async function POST(request: NextRequest) {
       insertData.deploy_tx_hash = deployTxHash;
     }
 
-    // Try insert with rwa_proof first
+    console.log("Saving contract to DB:", {
+      address: insertData.address,
+      name: insertData.name,
+      user_id: insertData.user_id,
+      has_rwa_proof: !!insertData.rwa_proof,
+      has_test_results: !!insertData.test_results
+    });
+
+    // Save contract to database using Supabase (upsert to handle existing contracts)
     let { data: contract, error: dbError } = await supabase
       .from('contracts')
-      .insert(insertData)
+      .upsert(insertData, { onConflict: 'address, network' })
       .select()
       .single();
 
-    // Fallback: If error is related to missing column, try without rwa_proof, test_results, or constructor_args
-    if (dbError && (
+    // Fallback: If error is related to missing column or schema cache issues, try without the extra columns
+    const isMissingColumnError = dbError && (
       dbError.message.includes("column \"rwa_proof\" of relation \"contracts\" does not exist") ||
       dbError.message.includes("column \"test_results\" of relation \"contracts\" does not exist") ||
-      dbError.message.includes("column \"constructor_args\" of relation \"contracts\" does not exist")
-    )) {
-      console.warn("RWA Proof, Test Results, or Constructor Args column missing, saving without them.");
+      dbError.message.includes("column \"constructor_args\" of relation \"contracts\" does not exist") ||
+      dbError.message.includes("schema cache") // Catch "Could not find the 'constructor_args' column... in the schema cache"
+    );
+
+    if (isMissingColumnError) {
+      console.warn("RWA Proof, Test Results, or Constructor Args column missing or schema cache issue, saving without them.");
       delete insertData.rwa_proof;
       delete insertData.test_results;
       delete insertData.constructor_args;
       const retry = await supabase
         .from('contracts')
-        .insert(insertData)
+        .upsert(insertData, { onConflict: 'address, network' })
         .select()
         .single();
       contract = retry.data;
@@ -112,9 +140,23 @@ export async function POST(request: NextRequest) {
     }
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      console.error('Database error details:', {
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint,
+        code: dbError.code
+      });
       return NextResponse.json(
-        { error: "Failed to save contract to database: " + dbError.message },
+        { 
+          error: "Failed to save contract to database: " + dbError.message,
+          details: dbError.details,
+          code: dbError.code,
+          attemptedData: {
+            address: insertData.address,
+            user_id: insertData.user_id,
+            network: insertData.network
+          }
+        },
         { status: 500 }
       );
     }

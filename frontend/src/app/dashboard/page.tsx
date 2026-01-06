@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Loader2, Plus, ExternalLink, ShieldCheck, Github } from "lucide-react";
+import { Loader2, Plus, ExternalLink, ShieldCheck, Github, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,29 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
         <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
         <p className="text-gray-400 text-lg">Loading your dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
+        <div className="bg-gray-800 border border-gray-700 rounded-xl p-8 max-w-md w-full text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Session Error</h2>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <div className="flex flex-col gap-3">
+            <Button asChild className="bg-blue-600 hover:bg-blue-700">
+              <Link href="/api/auth/github">
+                <Github className="w-4 h-4 mr-2" />
+                Re-login with GitHub
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild className="text-gray-400 hover:text-white">
+              <Link href="/">Return to Home</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

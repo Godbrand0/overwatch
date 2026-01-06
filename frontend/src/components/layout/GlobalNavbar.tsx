@@ -18,6 +18,8 @@ export function GlobalNavbar() {
         if (response.ok) {
           const data = await response.json();
           setUserData(data);
+        } else {
+          setUserData(null);
         }
       } catch (err) {
         console.error("Failed to fetch user data for navbar:", err);

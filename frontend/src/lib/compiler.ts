@@ -377,6 +377,9 @@ optimizer_runs = 200
               status: test.status,
               duration: test.duration,
               error: test.reason,
+              logs: test.logs || [],
+              traces: test.traces || [],
+              gasUsed: test.gas_used,
             });
           }
         }
