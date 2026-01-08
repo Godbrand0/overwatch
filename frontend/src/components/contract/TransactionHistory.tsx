@@ -55,12 +55,10 @@ export function TransactionHistory({ address, abi, deployedBlockNumber, deployTx
       const chainIdParam = isTestnet ? MANTLE_NETWORKS.testnet.chainId : MANTLE_NETWORKS.mainnet.chainId;
       
       const apiUrl = `/api/contracts/${address}/history?chainid=${chainIdParam}&startblock=${startBlock}`;
-      console.log("Fetching transaction history from:", apiUrl);
 
       const response = await fetch(apiUrl);
       
       const data = await response.json();
-      console.log("Transaction history response:", data);
       
       if (data.status === "1" && Array.isArray(data.result)) {
         const txList: Transaction[] = data.result.map((tx: any) => {

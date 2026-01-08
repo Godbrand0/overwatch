@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Zap, TrendingUp, Users, DollarSign, AlertCircle, CheckCircle2, Radio } from "lucide-react";
+import { Activity, Zap, TrendingUp, Users, DollarSign, AlertCircle, CheckCircle2, Radio, Gauge, Clock, Database } from "lucide-react";
 import { usePublicClient } from "wagmi";
 import { formatEther, decodeEventLog } from "viem";
 import { MANTLE_NETWORKS } from "@/lib/mantle";
@@ -40,6 +40,13 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
     lastActivity: 0,
     eventCount: 0,
   });
+  const [networkStats, setNetworkStats] = useState({
+    gasPrice: "0",
+    avgGasPrice: "0",
+    blockTime: 0,
+    avgBlockTime: 0,
+  });
+  const [oracleData, setOracleData] = useState<{ price: string; lastUpdate: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(true);
   const publicClient = usePublicClient();
@@ -134,20 +141,35 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
         // OR use the explorer API for logs too if we want full history without RPC limits.
         
         // Let's stick to RPC for events for now but only recent ones to populate the feed
-        const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock - BigInt(2000); // Last 2000 blocks for recent events
-
-        const logs = await publicClient.getLogs({
-          address: address as `0x${string}`,
-          fromBlock,
-          toBlock: currentBlock,
-        });
+        // Fetch events using Proxy API (Explorer API) to bypass RPC limits
+        const logsResponse = await fetch(
+          `/api/contracts/${address}/history?chainid=${chainIdParam}&module=logs&action=getLogs&fromBlock=0&toBlock=latest`
+        );
+        const logsData = await logsResponse.json();
+        
+        let logs: any[] = [];
+        if (logsData.status === "1" && Array.isArray(logsData.result)) {
+           logs = logsData.result;
+        } else {
+           console.warn("Failed to fetch logs from explorer:", logsData);
+           // Fallback to RPC if explorer fails (optional, but good for robustness)
+           // For now, let's just log it.
+        }
+        console.log("Fetched logs from explorer:", logs);
 
         const eventLogs: EventLog[] = [];
         
         for (const log of logs.slice(0, 50)) { // Process recent logs
            try {
-             const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
+             // Explorer API logs usually have timeStamp. If not, fetch block.
+             let timestamp = 0;
+             if (log.timeStamp) {
+                // Explorer API returns timestamp in hex or decimal string (seconds)
+                timestamp = Number(log.timeStamp);
+             } else {
+                const block = await publicClient.getBlock({ blockNumber: BigInt(log.blockNumber) });
+                timestamp = Number(block.timestamp);
+             }
              
              let eventName = "Unknown Event";
              let decodedArgs: any = {};
@@ -168,7 +190,7 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
                id: `${log.transactionHash}-${log.logIndex}`,
                eventName,
                args: decodedArgs,
-               timestamp: Number(block.timestamp),
+               timestamp,
                transactionHash: log.transactionHash,
                blockNumber: Number(log.blockNumber),
              });
@@ -176,6 +198,7 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
              console.error("Error processing log:", err);
            }
         }
+         console.log("Processed event logs:", eventLogs);
 
         setEvents(eventLogs.sort((a, b) => b.timestamp - a.timestamp));
         setStats({
@@ -192,6 +215,82 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
       setLoading(false);
     }
   };
+
+  // Fetch Network Health and Oracle Data
+  useEffect(() => {
+    const fetchNetworkAndOracle = async () => {
+      if (!publicClient) return;
+
+      try {
+        // 1. Gas Price & Block Time
+        const currentBlock = await publicClient.getBlock();
+        const gasPrice = await publicClient.getGasPrice();
+        
+        // Fetch recent blocks for averages
+        const blocksToFetch = 10;
+        const recentBlocks = await Promise.all(
+          Array.from({ length: blocksToFetch }).map((_, i) => 
+            publicClient.getBlock({ blockNumber: currentBlock.number - BigInt(i) })
+          )
+        );
+
+        // Calculate Block Times
+        const currentBlockTime = Number(recentBlocks[0].timestamp) - Number(recentBlocks[1].timestamp);
+        const avgBlockTime = (Number(recentBlocks[0].timestamp) - Number(recentBlocks[blocksToFetch - 1].timestamp)) / (blocksToFetch - 1);
+
+        // Calculate Average Gas (Base Fee)
+        // If baseFeePerGas is available, use it. Otherwise fallback to current gasPrice.
+        const totalGas = recentBlocks.reduce((acc, b) => acc + (b.baseFeePerGas || gasPrice), 0n);
+        const avgGas = totalGas / BigInt(blocksToFetch);
+
+        setNetworkStats({
+          gasPrice: formatEther(gasPrice, "gwei"),
+          avgGasPrice: formatEther(avgGas, "gwei"),
+          blockTime: currentBlockTime,
+          avgBlockTime: avgBlockTime,
+        });
+
+        // 3. Oracle Data (if applicable)
+        // Check for getLatestPrice or latestRoundData
+        const oracleFunction = abi.find(item => item.name === "getLatestPrice" || item.name === "latestRoundData");
+        if (oracleFunction) {
+           try {
+             const data = await publicClient.readContract({
+               address: address as `0x${string}`,
+               abi,
+               functionName: oracleFunction.name,
+             });
+             // Assuming standard Chainlink-like response or simple price
+             // If it's a struct (latestRoundData), it usually returns [roundId, answer, startedAt, updatedAt, answeredInRound]
+             // If it's simple getLatestPrice, it returns int/uint.
+             
+             let price = "0";
+             let lastUpdate = Date.now() / 1000;
+
+             if (Array.isArray(data)) {
+                // likely latestRoundData: [roundId, answer, startedAt, updatedAt, answeredInRound]
+                // answer is usually index 1
+                price = data[1].toString();
+                lastUpdate = Number(data[3]);
+             } else {
+                price = (data as any).toString();
+             }
+
+             setOracleData({ price, lastUpdate });
+           } catch (err) {
+             console.warn("Failed to fetch oracle data", err);
+           }
+        }
+
+      } catch (error) {
+        console.error("Error fetching network stats:", error);
+      }
+    };
+
+    fetchNetworkAndOracle();
+    const interval = setInterval(fetchNetworkAndOracle, 15000); // Update every 15s
+    return () => clearInterval(interval);
+  }, [publicClient, address, abi]);
 
   if (loading) {
     return (
@@ -293,6 +392,80 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
             <p className="text-xs text-gray-500 mt-1">MNT transferred</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Network & Oracle Health */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <Gauge className="w-4 h-4" />
+              Gas Price
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-end mb-1">
+              <div>
+                <div className="text-2xl font-bold text-white">
+                  {parseFloat(networkStats.gasPrice).toFixed(4)}
+                </div>
+                <p className="text-xs text-gray-500">Current (MNT)</p>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-semibold text-gray-300">
+                  {parseFloat(networkStats.avgGasPrice).toFixed(4)}
+                </div>
+                <p className="text-xs text-gray-500">Avg (10 blks)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Block Time
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-end mb-1">
+              <div>
+                <div className="text-2xl font-bold text-white">
+                  {networkStats.blockTime.toFixed(1)} <span className="text-sm font-normal text-gray-500">s</span>
+                </div>
+                <p className="text-xs text-gray-500">Current</p>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-semibold text-gray-300">
+                  {networkStats.avgBlockTime.toFixed(1)} <span className="text-sm font-normal text-gray-500">s</span>
+                </div>
+                <p className="text-xs text-gray-500">Avg (10 blks)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {oracleData && (
+          <Card className="bg-purple-500/5 border-purple-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-purple-400 flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                Oracle Price
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">
+                {/* Heuristic: if price is huge, might be 8 decimals. If small, maybe 18 or 0. 
+                    For now just show raw or try to format if it looks like standard USD (8 decimals) */}
+                {(Number(oracleData.price) / 1e8).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Updated {new Date(oracleData.lastUpdate * 1000).toLocaleTimeString()}
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Recent Events */}

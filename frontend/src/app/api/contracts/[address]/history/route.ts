@@ -10,6 +10,8 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
     const startblock = searchParams.get("startblock") || "0";
     const chainid = searchParams.get("chainid");
+    const moduleParam = searchParams.get("module") || "account";
+    const actionParam = searchParams.get("action") || "txlist";
 
     if (!address) {
       return NextResponse.json({ error: "Address is required" }, { status: 400 });
@@ -31,9 +33,9 @@ export async function GET(
       ? MANTLE_NETWORKS.testnet.explorerApiUrl
       : MANTLE_NETWORKS.mainnet.explorerApiUrl;
 
-    const apiUrl = `${explorerApiUrl}?chainid=${chainid}&module=account&action=txlist&address=${address}&startblock=${startblock}&endblock=99999999&sort=desc&apikey=${apiKey}`;
+    const apiUrl = `${explorerApiUrl}?chainid=${chainid}&module=${moduleParam}&action=${actionParam}&address=${address}&startblock=${startblock}&endblock=99999999&sort=desc&apikey=${apiKey}`;
     
-    console.log(`Proxying transaction history request for ${address} on chain ${chainid}`);
+    console.log(`Proxying request: ${moduleParam}/${actionParam} for ${address} on chain ${chainid}`);
 
     const response = await fetch(apiUrl);
     const data = await response.json();
