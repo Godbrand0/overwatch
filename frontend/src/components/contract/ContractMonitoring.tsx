@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Zap, TrendingUp, Users, DollarSign, AlertCircle, CheckCircle2, Radio } from "lucide-react";
 import { usePublicClient } from "wagmi";
 import { formatEther, decodeEventLog } from "viem";
+import { MANTLE_NETWORKS } from "@/lib/mantle";
 
 interface ContractMonitoringProps {
   address: string;
@@ -103,77 +104,88 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
     try {
       if (!publicClient) return;
 
-      const currentBlock = await publicClient.getBlockNumber();
+      const chainId = await publicClient.getChainId();
+      const isTestnet = chainId === 5003;
+      const explorerApiUrl = isTestnet 
+        ? MANTLE_NETWORKS.testnet.explorerApiUrl 
+        : MANTLE_NETWORKS.mainnet.explorerApiUrl;
 
-      // Use deployed block number if available, otherwise fallback to last 5k blocks
-      const fromBlock = deployedBlockNumber
-        ? BigInt(deployedBlockNumber)
-        : currentBlock - BigInt(5000);
+      // Fetch transactions from Proxy API for stats
+      const chainIdParam = isTestnet ? MANTLE_NETWORKS.testnet.chainId : MANTLE_NETWORKS.mainnet.chainId;
+      const response = await fetch(
+        `/api/contracts/${address}/history?chainid=${chainIdParam}&startblock=0`
+      );
+      
+      const data = await response.json();
+      
+      if (data.status === "1" && Array.isArray(data.result)) {
+        const txs = data.result;
+        const interactors = new Set<string>();
+        let totalValue = BigInt(0);
 
-      // Fetch logs
-      const logs = await publicClient.getLogs({
-        address: address as `0x${string}`,
-        fromBlock,
-        toBlock: "latest",
-      });
-
-      // Process events
-      const eventLogs: EventLog[] = [];
-      const txHashes = new Set<string>();
-      const interactors = new Set<string>();
-      let totalValue = BigInt(0);
-
-      for (const log of logs.slice(0, 50)) {
-        try {
-          const tx = await publicClient.getTransaction({
-            hash: log.transactionHash,
-          });
-
-          const block = await publicClient.getBlock({
-            blockNumber: log.blockNumber,
-          });
-
-          // Try to decode the event
-          let eventName = "Unknown Event";
-          let decodedArgs: any = {};
-
-          try {
-            const decoded: any = decodeEventLog({
-              abi,
-              data: log.data,
-              topics: log.topics,
-            });
-            eventName = decoded.eventName || "Unknown Event";
-            decodedArgs = decoded.args || {};
-          } catch {
-            // If decoding fails, use unknown event
-          }
-
-          eventLogs.push({
-            id: `${log.transactionHash}-${log.logIndex}`,
-            eventName,
-            args: decodedArgs,
-            timestamp: Number(block.timestamp),
-            transactionHash: log.transactionHash,
-            blockNumber: Number(log.blockNumber),
-          });
-
-          txHashes.add(log.transactionHash);
+        txs.forEach((tx: any) => {
           interactors.add(tx.from.toLowerCase());
-          totalValue += tx.value;
-        } catch (err) {
-          console.error("Error processing log:", err);
-        }
-      }
+          totalValue += BigInt(tx.value);
+        });
 
-      setEvents(eventLogs.sort((a, b) => b.timestamp - a.timestamp));
-      setStats({
-        totalTransactions: txHashes.size,
-        totalValue: formatEther(totalValue),
-        uniqueInteractors: interactors.size,
-        lastActivity: eventLogs[0]?.timestamp || 0,
-        eventCount: logs.length,
-      });
+        // Also fetch events for the event feed
+        // We can still use getLogs for events, or use the explorer API for logs if preferred.
+        // For now, let's keep getLogs for events but limit the range to recent blocks for performance,
+        // OR use the explorer API for logs too if we want full history without RPC limits.
+        
+        // Let's stick to RPC for events for now but only recent ones to populate the feed
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = currentBlock - BigInt(2000); // Last 2000 blocks for recent events
+
+        const logs = await publicClient.getLogs({
+          address: address as `0x${string}`,
+          fromBlock,
+          toBlock: currentBlock,
+        });
+
+        const eventLogs: EventLog[] = [];
+        
+        for (const log of logs.slice(0, 50)) { // Process recent logs
+           try {
+             const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
+             
+             let eventName = "Unknown Event";
+             let decodedArgs: any = {};
+
+             try {
+                const decoded: any = decodeEventLog({
+                  abi,
+                  data: log.data,
+                  topics: log.topics,
+                });
+                eventName = decoded.eventName || "Unknown Event";
+                decodedArgs = decoded.args || {};
+             } catch {
+                // ignore
+             }
+
+             eventLogs.push({
+               id: `${log.transactionHash}-${log.logIndex}`,
+               eventName,
+               args: decodedArgs,
+               timestamp: Number(block.timestamp),
+               transactionHash: log.transactionHash,
+               blockNumber: Number(log.blockNumber),
+             });
+           } catch (err) {
+             console.error("Error processing log:", err);
+           }
+        }
+
+        setEvents(eventLogs.sort((a, b) => b.timestamp - a.timestamp));
+        setStats({
+          totalTransactions: txs.length,
+          totalValue: formatEther(totalValue),
+          uniqueInteractors: interactors.size,
+          lastActivity: txs.length > 0 ? Number(txs[0].timeStamp) : 0,
+          eventCount: logs.length, // This is just recent events count now, or we could fetch total event count from explorer if needed
+        });
+      }
     } catch (error) {
       console.error("Error fetching historical data:", error);
     } finally {

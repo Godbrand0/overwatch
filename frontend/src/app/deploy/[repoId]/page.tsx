@@ -8,8 +8,9 @@ import { DeploymentStatus } from "@/components/deploy/DeploymentStatus";
 import { CompilationError } from "@/components/deploy/CompilationError";
 import { DeployProgress, DeployStep } from "@/components/deploy/DeployProgress";
 import { GitHubRepo } from "@/types/github";
-import { Loader2, ArrowLeft, Rocket, ShieldCheck, Activity, Cpu, Send, TestTube } from "lucide-react";
+import { Loader2, ArrowLeft, Rocket, ShieldCheck, Activity, Cpu, Send, TestTube, Box, ChevronRight } from "lucide-react";
 import { formatTransactionError } from "@/lib/error-handler";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAccount, useDeployContract, useWaitForTransactionReceipt } from "wagmi";
@@ -67,14 +68,12 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
   }, [isCompiled, compiledData, rwaProof]);
 
   const handleProofGenerate = (proof: RWAProof) => {
-    // Generate manifest hash for cryptographic binding
     const manifest = {
       chain: "Mantle Sepolia",
       deployer: address,
       ...proof
     };
     
-    // Simple hash of the manifest data
     const hash = keccak256(encodePacked(
       ['string', 'string', 'string', 'string', 'string'],
       [proof.assetId, proof.custodian, proof.nav, proof.assetType, address || ""]
@@ -86,7 +85,6 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     });
   };
 
-  // Update deploy step when transaction is sent and confirming
   useEffect(() => {
     if (deployHash && isConfirming) {
       const explorerUrl = `https://sepolia.mantlescan.xyz/tx/${deployHash}`;
@@ -110,7 +108,6 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     if (repoId) fetchRepo();
   }, [repoId]);
 
-  // Reset state when contract selection changes
   useEffect(() => {
     setIsCompiled(false);
     setCompilationError(null);
@@ -118,8 +115,8 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     setDeploymentError(null);
     setCompiledData(null);
     setDeploymentData(null);
-    setTestResults(null); // Reset tests
-    setRwaProof(null); // Reset proof
+    setTestResults(null);
+    setRwaProof(null);
     setSteps([
       { id: "compile", label: "Compiling Contract", status: "pending" },
       { id: "deploy", label: "Deploying to Mantle", status: "pending" },
@@ -127,7 +124,6 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     ]);
   }, [selectedContract]);
 
-  // Handle deployment error (e.g. user rejected)
   useEffect(() => {
     if (deployError) {
       const formattedError = formatTransactionError(deployError);
@@ -138,7 +134,6 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     }
   }, [deployError]);
 
-  // Handle transaction confirmation
   useEffect(() => {
     async function handleConfirmation() {
       if (isConfirmed && receipt && compiledData) {
@@ -162,7 +157,6 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
 
           updateStep("deploy", "success", undefined, undefined, "Contract Deployed");
 
-          // Save to DB
           const saveResponse = await fetch("/api/deploy", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -174,25 +168,22 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
               deployTxHash: receipt.transactionHash,
               contractAddress,
               constructorArgs: compiledData.constructorArgs,
-              rwaProof, // Pass the proof to be saved
-              testResults, // Pass the test results to be saved
-              deployedBlockNumber: Number(receipt.blockNumber), // Pass the block number
+              rwaProof,
+              testResults,
+              deployedBlockNumber: Number(receipt.blockNumber),
             }),
           });
 
           const saveData = await saveResponse.json();
           if (!saveResponse.ok) {
-            console.error("Failed to save contract to DB:", saveData.error);
             throw new Error(saveData.error || "Failed to save contract to database");
           }
-
-          console.log("Contract saved successfully:", contractAddress);
 
           setDeploymentData({
             contractAddress,
             txHash: receipt.transactionHash,
             blockNumber: Number(receipt.blockNumber),
-            nonce: 0, // Nonce is not directly in receipt, would need to fetch from provider if critical
+            nonce: 0,
             abi: compiledData.abi,
             bytecode: compiledData.bytecode,
             sourceCode: compiledData.sourceCode,
@@ -271,11 +262,8 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     setTestResults(null);
 
     try {
-      // For MVP, we assume a test file exists with standard naming convention
-      // In a real app, we'd let user select test file or auto-detect
       const testFileName = selectedContract.replace(".sol", ".t.sol").replace("src/", "test/");
       
-      // Try to fetch test file content
       let testCode = "";
       try {
         const testResponse = await fetch(`/api/repos/${repoId}/file?path=${testFileName}`);
@@ -287,7 +275,6 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
         console.log("No test file found");
       }
 
-      // If no test file found, we can't run tests
       if (!testCode) {
         setTestResults({ 
           error: `No matching test file found (expected ${testFileName})`,
@@ -351,17 +338,8 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
     setVerifying(true);
     updateStep("verify", "loading");
 
-    // Before making the request, ensure all deploymentData fields are valid and present
     if (!deploymentData || !deploymentData.contractAddress || !deploymentData.sourceCode || !deploymentData.contractName) {
-      const missingFields = [];
-      if (!deploymentData) missingFields.push("deploymentData");
-      else {
-        if (!deploymentData.contractAddress) missingFields.push("contractAddress");
-        if (!deploymentData.sourceCode) missingFields.push("sourceCode");
-        if (!deploymentData.contractName) missingFields.push("contractName");
-      }
-      const errorMsg = `Missing required deployment data for verification: ${missingFields.join(", ")}`;
-      console.error(errorMsg);
+      const errorMsg = "Missing required deployment data for verification";
       updateStep("verify", "error", errorMsg);
       setVerifying(false);
       return;
@@ -384,9 +362,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
       const verifyData = await verifyResponse.json();
       
       if (!verifyResponse.ok) {
-        // Log the exact error message from the server for debugging
-        console.error("Server responded with 400 Bad Request:", verifyData.error);
-        throw new Error(verifyData.error || "Verification failed: Unknown server error");
+        throw new Error(verifyData.error || "Verification failed");
       }
 
       updateStep("verify", "success", undefined, undefined, "Contract Verified");
@@ -394,7 +370,6 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
         router.push(`/contract/${deploymentData.contractAddress}`);
       }, 2000);
     } catch (err: any) {
-      console.error("Verification error details:", err);
       updateStep("verify", "error", err.message);
     } finally {
       setVerifying(false);
@@ -409,28 +384,39 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
-        <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-        <p className="text-gray-400 text-lg">Loading repository details...</p>
+      <div className="min-h-screen bg-mantle-dark flex flex-col items-center justify-center bg-grid">
+        <div className="relative">
+          <div className="w-24 h-24 border-4 border-mantle-green/20 border-t-mantle-green rounded-full animate-spin" />
+          <Cpu className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-mantle-green animate-pulse" />
+        </div>
+        <p className="mt-8 text-mantle-green font-mono tracking-widest animate-pulse uppercase">Initializing Deployment Mission...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white py-12">
-      <div className="container mx-auto px-4 max-w-5xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <div className="space-y-2">
-            <Link href="/repos" className="inline-flex items-center text-gray-400 hover:text-white transition-colors text-sm mb-2">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Repositories
+    <div className="min-h-screen bg-mantle-dark text-white py-12 bg-grid">
+      <div className="container mx-auto px-4 max-w-6xl">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+          <div className="space-y-3">
+            <Link href="/repos" className="inline-flex items-center text-slate-500 hover:text-mantle-green transition-colors text-xs font-bold uppercase tracking-widest group">
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+              Abort to Repositories
             </Link>
-            <h1 className="text-4xl font-bold tracking-tight">
-              {deploymentStatus === "success" ? "Deployment Complete" : "Deploy Contract"}
+            <h1 className="text-5xl font-black tracking-tight">
+              {deploymentStatus === "success" ? "Mission Accomplished" : "Deploy Asset"}
             </h1>
-            <p className="text-gray-400">
-              {repo?.full_name} {selectedContract && `• ${selectedContract}`}
-            </p>
+            <div className="flex items-center gap-3 text-slate-400 font-medium">
+              <Github className="w-4 h-4" />
+              <span>{repo?.full_name}</span>
+              {selectedContract && (
+                <>
+                  <ChevronRight className="w-4 h-4 text-slate-600" />
+                  <span className="text-mantle-green font-mono text-sm">{selectedContract}</span>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -438,117 +424,142 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
               <Button 
                 onClick={() => document.getElementById('deploy-btn')?.click()}
                 disabled={deploying || !isConnected}
-                className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold shadow-lg shadow-blue-500/20"
+                className="bg-mantle-green text-mantle-dark hover:bg-mantle-green/90 h-14 px-8 font-black text-lg rounded-xl shadow-[0_0_20px_rgba(0,255,209,0.3)] transition-all hover:scale-105"
               >
-                {deploying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                Deploy Contract
+                {deploying ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
+                Initiate Deployment
               </Button>
             )}
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-sm font-medium">
-              <Rocket className="w-4 h-4" />
-              Mantle Testnet
+            <div className="flex items-center gap-2 px-4 py-2 bg-mantle-green/10 border border-mantle-green/20 rounded-full text-mantle-green text-[10px] font-bold uppercase tracking-[0.2em]">
+              <Rocket className="w-3 h-3" />
+              Mantle Sepolia
             </div>
           </div>
         </div>
 
         {!isConnected && deploymentStatus !== "success" && (
-          <Alert className="mb-8 bg-yellow-900/20 border-yellow-900/50 text-yellow-500">
-            <ShieldCheck className="h-4 w-4" />
-            <AlertTitle>Wallet Not Connected</AlertTitle>
-            <AlertDescription>
-              Please connect your wallet to deploy contracts to Mantle Network.
-            </AlertDescription>
-          </Alert>
+          <div className="glass-card hud-border p-6 bg-yellow-500/[0.03] border-yellow-500/20 mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-500 border border-yellow-500/20">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold tracking-tight">Wallet Connection Required</h3>
+                <p className="text-yellow-500/60 text-sm font-medium">
+                  Please connect your institutional wallet to authorize the deployment mission.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
         <div className="grid lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2 space-y-12">
+          <div className="lg:col-span-2 space-y-16">
             {deploymentStatus !== "pending" ? (
-              <DeploymentStatus 
-                status={deploymentStatus === "success" ? "success" : "error"}
-                error={deploymentError || undefined}
-                contractAddress={deploymentData?.contractAddress}
-                txHash={deploymentData?.txHash}
-                blockNumber={deploymentData?.blockNumber}
-                nonce={deploymentData?.nonce}
-                abi={deploymentData?.abi}
-                bytecode={deploymentData?.bytecode}
-                onVerify={handleVerify}
-                onRetry={() => handleDeploy(compiledData?.constructorArgs || [])}
-                verifying={verifying}
-              />
+              <div className="animate-in fade-in zoom-in-95 duration-700">
+                <DeploymentStatus 
+                  status={deploymentStatus === "success" ? "success" : "error"}
+                  error={deploymentError || undefined}
+                  contractAddress={deploymentData?.contractAddress}
+                  txHash={deploymentData?.txHash}
+                  blockNumber={deploymentData?.blockNumber}
+                  nonce={deploymentData?.nonce}
+                  abi={deploymentData?.abi}
+                  bytecode={deploymentData?.bytecode}
+                  onVerify={handleVerify}
+                  onRetry={() => handleDeploy(compiledData?.constructorArgs || [])}
+                  verifying={verifying}
+                />
+              </div>
             ) : compilationError ? (
-              <CompilationError 
-                error={compilationError}
-                contractName={selectedContract?.split('/').pop() || "Contract"}
-                onRetry={handleCompile}
-              />
+              <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <CompilationError 
+                  error={compilationError}
+                  contractName={selectedContract?.split('/').pop() || "Contract"}
+                  onRetry={handleCompile}
+                />
+              </div>
             ) : (
               <>
-                <section className="space-y-6">
+                <section className="space-y-8">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-blue-500">1</div>
-                    <h2 className="text-2xl font-bold">Select Contract</h2>
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black text-mantle-green text-xl shadow-[0_0_15px_rgba(0,255,209,0.1)]">01</div>
+                    <div>
+                      <h2 className="text-2xl font-black tracking-tight">Select Asset Core</h2>
+                      <p className="text-slate-500 text-sm">Choose the smart contract file from your repository.</p>
+                    </div>
                   </div>
-                  <ContractSelector
-                    repoId={repoId}
-                    selectedContract={selectedContract}
-                    onSelect={setSelectedContract}
-                  />
+                  <div className="glass-card p-1">
+                    <ContractSelector
+                      repoId={repoId}
+                      selectedContract={selectedContract}
+                      onSelect={setSelectedContract}
+                    />
+                  </div>
                   {selectedContract && !isCompiled && !compiling && (
                     <div className="flex justify-end animate-in fade-in slide-in-from-right-4">
                       <Button 
                         onClick={handleCompile}
                         disabled={compiling}
-                        className="bg-blue-600 hover:bg-blue-700 h-12 px-8 text-lg"
+                        className="bg-mantle-green text-mantle-dark hover:bg-mantle-green/90 h-14 px-10 text-lg font-black rounded-xl shadow-[0_0_20px_rgba(0,255,209,0.3)] transition-all hover:scale-105"
                       >
                         {compiling ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Cpu className="w-5 h-5 mr-2" />}
-                        Compile Contract
+                        Compile Asset
                       </Button>
                     </div>
                   )}
                 </section>
 
                 {isCompiled && (
-                  <section className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                  <section className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-blue-500">2</div>
-                      <h2 className="text-2xl font-bold">Review & Configure</h2>
+                      <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black text-mantle-green text-xl shadow-[0_0_15px_rgba(0,255,209,0.1)]">02</div>
+                      <div>
+                        <h2 className="text-2xl font-black tracking-tight">Configure & Validate</h2>
+                        <p className="text-slate-500 text-sm">Run tests and set constructor parameters.</p>
+                      </div>
                     </div>
                     
                     {/* Test Runner Section */}
-                    <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-6 mb-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                          <TestTube className="w-5 h-5 text-purple-400" />
-                          Contract Tests
-                        </h3>
+                    <div className="glass-card hud-border p-8 bg-purple-500/[0.02]">
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                            <TestTube className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg">Asset Validation</h3>
+                            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Automated Test Suite</p>
+                          </div>
+                        </div>
                         {!testResults && (
                           <Button 
                             onClick={handleRunTests}
                             disabled={testing}
                             variant="outline"
-                            size="sm"
-                            className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                            className="h-10 px-6 border-purple-500/30 text-purple-400 hover:bg-purple-500/10 font-bold rounded-lg transition-all"
                           >
                             {testing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                            Run Tests
+                            Run Validation
                           </Button>
                         )}
                       </div>
                       
                       {(testing || testResults) && (
-                        <TestDashboard results={testResults} isLoading={testing} />
+                        <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                          <TestDashboard results={testResults} isLoading={testing} />
+                        </div>
                       )}
                     </div>
 
-                    <ContractDetails 
-                      abi={compiledData.abi}
-                      bytecode={compiledData.bytecode}
-                      onDeploy={handleDeploy}
-                      deploying={deploying}
-                    />
-                    {/* Hidden button for the top corner trigger */}
+                    <div className="glass-card p-1">
+                      <ContractDetails 
+                        abi={compiledData.abi}
+                        bytecode={compiledData.bytecode}
+                        onDeploy={handleDeploy}
+                        deploying={deploying}
+                      />
+                    </div>
                     <button id="deploy-btn" className="hidden" onClick={() => {}} />
                   </section>
                 )}
@@ -557,24 +568,18 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
           </div>
 
           <div className="space-y-8">
-            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-8 sticky top-8 backdrop-blur-sm">
-              <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
-                <Activity className="w-6 h-6 text-blue-500" />
-                Process Status
-              </h3>
+            <div className="glass-card hud-border p-8 sticky top-8 bg-white/[0.02]">
+              <div className="flex items-center gap-3 mb-10">
+                <Activity className="w-6 h-6 text-mantle-green" />
+                <h3 className="text-xl font-black tracking-tight">Mission Status</h3>
+              </div>
+              
               <DeployProgress steps={steps} />
               
-              <div className="mt-12 pt-8 border-t border-gray-700/50">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Network</span>
-                    <span className="text-blue-400 font-medium">Mantle Sepolia</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Status</span>
-                    <span className="text-green-400 font-medium">Connected</span>
-                  </div>
-                </div>
+              <div className="mt-12 pt-8 border-t border-white/5 space-y-6">
+                <StatusItem label="Target Network" value="Mantle Sepolia" highlight />
+                <StatusItem label="Wallet Status" value={isConnected ? "Authorized" : "Unauthorized"} error={!isConnected} />
+                <StatusItem label="Asset Type" value={compiledData?.rwaCompliance?.isCompliant ? "RWA Standard" : "Generic Contract"} />
               </div>
             </div>
           </div>
@@ -588,4 +593,31 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
       </div>
     </div>
   );
+}
+
+function StatusItem({ label, value, highlight = false, error = false }: { label: string, value: string, highlight?: boolean, error?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</span>
+      <span className={cn(
+        "text-xs font-bold uppercase tracking-wider",
+        highlight ? "text-mantle-green" : error ? "text-red-500" : "text-slate-300"
+      )}>{value}</span>
+    </div>
+  );
+}
+
+function Github(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+    </svg>
+  )
 }

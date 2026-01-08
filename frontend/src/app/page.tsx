@@ -1,67 +1,110 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ShieldCheck, Zap, BarChart3, Globe, Lock, Cpu } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-linear-to-b from-gray-900 to-black text-white">
+    <div className="min-h-screen bg-grid">
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-12 md:py-20">
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-6xl font-bold mb-6 bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-purple-600">
-            Deploy to Mantle in One Click
+      <div className="container mx-auto px-4 pt-24 pb-32 relative overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none">
+          <div className="absolute top-24 left-1/4 w-64 h-64 bg-mantle-green/10 rounded-full blur-3xl animate-pulse-glow" />
+          <div className="absolute bottom-24 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative z-10 text-center max-w-5xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-mantle-green/10 border border-mantle-green/20 text-mantle-green text-xs font-bold tracking-widest uppercase mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mantle-green opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-mantle-green"></span>
+            </span>
+            Institutional-Grade RWA Infrastructure
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-extrabold mb-8 tracking-tight leading-[1.1]">
+            The Trust Layer for <br />
+            <span className="text-mantle-green text-glow">Real World Assets</span>
           </h1>
-          <p className="text-xl text-gray-300 mb-8">
-            GitHub-native DevOps dashboard for deploying, verifying, and
-            monitoring smart contracts on Mantle Network
+          
+          <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
+            Deploy, anchor, and monitor institutional-grade RWAs on Mantle Network. 
+            Bridge the gap between physical assets and on-chain liquidity with immutable legal linkage.
           </p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/api/auth/github">
-              <Button size="lg" className="gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-                Connect GitHub
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a href="/api/auth/github">
+              <Button size="lg" className="h-14 px-8 bg-mantle-green text-mantle-dark hover:bg-mantle-green/90 font-bold text-lg rounded-xl shadow-[0_0_20px_rgba(0,255,209,0.3)] transition-all hover:scale-105">
+                Launch Mission Control
               </Button>
-            </Link>
-            <Link href="#demo">
-              <Button size="lg" variant="outline">
-                Watch Demo
+            </a>
+            <Link href="#ecosystem">
+              <Button size="lg" variant="outline" className="h-14 px-8 border-white/10 bg-white/5 hover:bg-white/10 font-bold text-lg rounded-xl backdrop-blur-sm">
+                Explore Ecosystem
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Features */}
-        <div className="grid md:grid-cols-3 gap-8 mt-20">
+        {/* Stats Ticker */}
+        <div className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <StatBox label="Total Anchored" value="124" sub="Assets" />
+          <StatBox label="TVL Secured" value="$1.2B" sub="USD" />
+          <StatBox label="Jurisdictions" value="18" sub="Global" />
+          <StatBox label="Uptime" value="99.9%" sub="Network" />
+        </div>
+      </div>
+
+      {/* Features Grid */}
+      <div className="container mx-auto px-4 py-24">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold mb-4">Core Infrastructure</h2>
+          <p className="text-slate-400">Everything you need to tokenize and manage real-world value.</p>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-8">
           <FeatureCard
-            icon={
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            }
-            title="One-Click Deploy"
-            description="Deploy from GitHub to Mantle with automatic verification in seconds"
+            icon={<ShieldCheck className="w-8 h-8" />}
+            title="RWA Trust Anchor"
+            description="Immutable on-chain linkage between smart contracts and legal documentation with SHA-256 verification."
           />
           <FeatureCard
-            icon={
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            }
-            title="Auto-Verify"
-            description="Contracts are automatically verified on Mantle Explorer"
+            icon={<Zap className="w-8 h-8" />}
+            title="Rapid Deployment"
+            description="GitHub-native workflow for deploying and verifying RWA-compliant contracts in seconds."
           />
           <FeatureCard
-            icon={
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            }
-            title="Live Monitoring"
-            description="Real-time transaction tracking and smart alerts"
+            icon={<BarChart3 className="w-8 h-8" />}
+            title="Real-time Analytics"
+            description="Institutional-grade monitoring of asset performance, NAV updates, and compliance status."
+          />
+          <FeatureCard
+            icon={<Globe className="w-8 h-8" />}
+            title="Global Compliance"
+            description="Support for multi-jurisdictional legal frameworks and KYC/AML identity registries."
+          />
+          <FeatureCard
+            icon={<Lock className="w-8 h-8" />}
+            title="Secure Custody"
+            description="Integrated custodian management and multi-sig authorization for asset operations."
+          />
+          <FeatureCard
+            icon={<Cpu className="w-8 h-8" />}
+            title="Mantle Optimized"
+            description="Deeply integrated with Mantle's modular architecture for high performance and low costs."
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function StatBox({ label, value, sub }: { label: string, value: string, sub: string }) {
+  return (
+    <div className="glass-card p-4 text-center hud-border">
+      <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">{label}</p>
+      <p className="text-2xl font-black text-white leading-none mb-1">{value}</p>
+      <p className="text-[10px] uppercase tracking-widest text-mantle-green font-bold">{sub}</p>
     </div>
   );
 }
@@ -76,10 +119,12 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-      <div className="text-blue-400 mb-4">{icon}</div>
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-gray-400">{description}</p>
+    <div className="glass-card p-8 group">
+      <div className="w-14 h-14 rounded-xl bg-mantle-green/10 flex items-center justify-center text-mantle-green mb-6 group-hover:scale-110 transition-transform duration-300">
+        {icon}
+      </div>
+      <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
+      <p className="text-slate-400 leading-relaxed text-sm">{description}</p>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { History, ExternalLink, CheckCircle2, XCircle, Clock, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { usePublicClient } from "wagmi";
 import { formatEther, getFunctionSelector } from "viem";
+import { MANTLE_NETWORKS } from "@/lib/mantle";
 
 interface TransactionHistoryProps {
   address: string;
@@ -43,110 +44,75 @@ export function TransactionHistory({ address, abi, deployedBlockNumber, deployTx
     try {
       if (!publicClient) return;
 
-      // Get current block
-      const currentBlock = await publicClient.getBlockNumber();
+      const chainId = await publicClient.getChainId();
+      const isTestnet = chainId === 5003;
+      const explorerApiUrl = isTestnet 
+        ? MANTLE_NETWORKS.testnet.explorerApiUrl 
+        : MANTLE_NETWORKS.mainnet.explorerApiUrl;
 
-      // Use deployed block number if available, otherwise fallback to last 10k blocks
-      const fromBlock = deployedBlockNumber
-        ? BigInt(deployedBlockNumber)
-        : currentBlock - BigInt(10000);
+      // Fetch transactions from Proxy API
+      const startBlock = deployedBlockNumber || 0;
+      const chainIdParam = isTestnet ? MANTLE_NETWORKS.testnet.chainId : MANTLE_NETWORKS.mainnet.chainId;
       
-      setSearchFromBlock(fromBlock);
+      const apiUrl = `/api/contracts/${address}/history?chainid=${chainIdParam}&startblock=${startBlock}`;
+      console.log("Fetching transaction history from:", apiUrl);
 
-      // Fetch logs for this contract
-      const logs = await publicClient.getLogs({
-        address: address as `0x${string}`,
-        fromBlock,
-        toBlock: "latest",
-      });
+      const response = await fetch(apiUrl);
+      
+      const data = await response.json();
+      console.log("Transaction history response:", data);
+      
+      if (data.status === "1" && Array.isArray(data.result)) {
+        const txList: Transaction[] = data.result.map((tx: any) => {
+          // Determine transaction type
+          let type: "incoming" | "outgoing" | "contract" = "contract";
+          if (tx.to.toLowerCase() === address.toLowerCase()) {
+            type = "incoming";
+          } else if (tx.from.toLowerCase() === address.toLowerCase()) {
+            type = "outgoing";
+          }
 
-      // Process logs into transactions
-      const txMap = new Map<string, Transaction>();
+          // Try to decode function name if input exists
+          let functionName = tx.functionName;
+          if (!functionName && tx.input && tx.input.length >= 10) {
+             const selector = tx.input.slice(0, 10);
+             const func = abi.find((item) => {
+               if (item.type !== "function") return false;
+               try {
+                 return getFunctionSelector(item) === selector;
+               } catch {
+                 return false;
+               }
+             });
+             if (func) functionName = func.name;
+          }
+          
+          // Clean up function name if it contains arguments (e.g. "method(uint256)")
+          if (functionName && functionName.includes("(")) {
+            functionName = functionName.split("(")[0];
+          }
 
-      // Always try to fetch the deployment transaction if we have the hash
-      if (deployTxHash) {
-        try {
-          const tx = await publicClient.getTransaction({ hash: deployTxHash as `0x${string}` });
-          const receipt = await publicClient.getTransactionReceipt({ hash: deployTxHash as `0x${string}` });
-          const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
-
-          txMap.set(deployTxHash, {
-            hash: deployTxHash,
+          return {
+            hash: tx.hash,
             from: tx.from,
             to: tx.to || address,
-            value: formatEther(tx.value),
-            timestamp: Number(block.timestamp),
-            blockNumber: Number(receipt.blockNumber),
-            functionName: "Contract Deployment",
-            status: receipt.status === "success" ? "success" : "failed",
-            type: "contract",
-          });
-        } catch (err) {
-          console.error("Error fetching deployment transaction:", err);
+            value: formatEther(BigInt(tx.value)),
+            timestamp: Number(tx.timeStamp),
+            blockNumber: Number(tx.blockNumber),
+            functionName: functionName || "Contract Interaction",
+            status: tx.isError === "0" ? "success" : "failed",
+            type,
+          };
+        });
+
+        setTransactions(txList);
+      } else {
+        console.warn("Explorer API returned no transactions or error:", data);
+        // Fallback or empty list
+        if (data.message === "No transactions found") {
+           setTransactions([]);
         }
       }
-
-      for (const log of logs) {
-        if (!txMap.has(log.transactionHash)) {
-          try {
-            const tx = await publicClient.getTransaction({
-              hash: log.transactionHash,
-            });
-
-            const receipt = await publicClient.getTransactionReceipt({
-              hash: log.transactionHash,
-            });
-
-            const block = await publicClient.getBlock({
-              blockNumber: log.blockNumber,
-            });
-
-            // Try to decode function name from input
-            let functionName = "Contract Interaction";
-            if (tx.input && tx.input.length >= 10) {
-              const selector = tx.input.slice(0, 10);
-              const func = abi.find(
-                (item) => {
-                  if (item.type !== "function") return false;
-                  try {
-                    return getFunctionSelector(item) === selector;
-                  } catch {
-                    return false;
-                  }
-                }
-              );
-              if (func) functionName = func.name;
-            }
-
-            let type: "incoming" | "outgoing" | "contract" = "contract";
-            if (tx.to?.toLowerCase() === address.toLowerCase()) {
-              type = "incoming";
-            } else if (tx.from.toLowerCase() === address.toLowerCase()) {
-              type = "outgoing";
-            }
-
-            txMap.set(log.transactionHash, {
-              hash: log.transactionHash,
-              from: tx.from,
-              to: tx.to || address,
-              value: formatEther(tx.value),
-              timestamp: Number(block.timestamp),
-              blockNumber: Number(log.blockNumber),
-              functionName,
-              status: receipt.status === "success" ? "success" : "failed",
-              type,
-            });
-          } catch (err) {
-            console.error("Error fetching transaction details:", err);
-          }
-        }
-      }
-
-      const txList = Array.from(txMap.values()).sort(
-        (a, b) => b.timestamp - a.timestamp
-      );
-
-      setTransactions(txList);
     } catch (error) {
       console.error("Error fetching transaction history:", error);
     } finally {

@@ -14,15 +14,17 @@ import { mantle, mantleSepoliaTestnet } from "viem/chains";
 export const MANTLE_NETWORKS = {
   testnet: {
     chain: mantleSepoliaTestnet,
+    chainId: 5003,
     rpcUrl: process.env.NEXT_PUBLIC_MANTLE_TESTNET_RPC || "https://rpc.sepolia.mantle.xyz",
     explorerUrl: "https://sepolia.mantlescan.xyz",
-    explorerApiUrl: process.env.MANTLE_TESTNET_EXPLORER_API || "https://api-sepolia.mantlescan.xyz/api",
+    explorerApiUrl: "https://api.etherscan.io/v2/api",
   },
   mainnet: {
     chain: mantle,
+    chainId: 5000,
     rpcUrl: process.env.NEXT_PUBLIC_MANTLE_MAINNET_RPC || "https://rpc.mantle.xyz",
     explorerUrl: "https://mantlescan.xyz",
-    explorerApiUrl: process.env.MANTLE_MAINNET_EXPLORER_API || "https://api.mantlescan.xyz/api",
+    explorerApiUrl: "https://api.etherscan.io/v2/api",
   },
 } as const;
 

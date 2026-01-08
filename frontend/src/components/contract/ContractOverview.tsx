@@ -2,9 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Copy, ExternalLink, ShieldCheck, Clock, FileCode, Zap, BarChart3 } from "lucide-react";
+import { Copy, ExternalLink, ShieldCheck, Clock, FileCode, Zap, BarChart3, Box, Globe, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface ContractOverviewProps {
   contract: {
@@ -14,12 +15,19 @@ interface ContractOverviewProps {
     deployed_at: string;
     verified_at?: string;
     abi?: any[];
+    is_anchored?: boolean;
     rwa_compliance?: {
       isCompliant: boolean;
       detectedFeatures: string[];
       standard?: string;
     };
     rwa_proof?: any;
+    rwa_type?: string;
+    legal_right?: string;
+    jurisdiction?: string;
+    custodian?: string;
+    offchain_asset_id?: string;
+    legal_doc_hash?: string;
   };
 }
 
@@ -35,132 +43,143 @@ export function ContractOverview({ contract }: ContractOverviewProps) {
   const explorerUrl = `https://sepolia.mantlescan.xyz/address/${contract.address}`;
 
   return (
-    <div className="grid md:grid-cols-3 gap-6">
-      <Card className="md:col-span-2 bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-3xl font-bold text-white">
+    <div className="grid lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2 glass-card hud-border p-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+          <ShieldCheck className="w-48 h-48 text-mantle-green" />
+        </div>
+        
+        <div className="relative z-10 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-4xl font-black tracking-tight text-white">
                   {contract.name}
-                </CardTitle>
-                <div className="flex gap-2">
+                </h1>
+                <div className="flex flex-wrap gap-2">
+                  {contract.is_anchored && (
+                    <Badge className="bg-mantle-green/20 text-mantle-green border-mantle-green/30 font-bold uppercase tracking-widest text-[10px] px-3 py-1">
+                      <ShieldCheck className="w-3 h-3 mr-1.5" />
+                      Anchored
+                    </Badge>
+                  )}
                   {contract.verified_at && (
-                    <Badge className="bg-green-500/10 text-green-400 border-green-500/20 flex gap-1 px-2 py-0.5">
-                      <ShieldCheck className="w-3.5 h-3.5" />
+                    <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold uppercase tracking-widest text-[10px] px-3 py-1">
                       Verified
                     </Badge>
                   )}
                   {contract.rwa_compliance?.isCompliant && (
-                    <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 flex gap-1 px-2 py-0.5">
-                      <Zap className="w-3.5 h-3.5 text-blue-400" />
-                      Mantle RWA
-                    </Badge>
-                  )}
-                  {contract.rwa_proof && (
-                    <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 flex gap-1 px-2 py-0.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-                      Proof Anchored
+                    <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 font-bold uppercase tracking-widest text-[10px] px-3 py-1">
+                      RWA Compliant
                     </Badge>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm">
-                {contract.address}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 hover:bg-gray-700/50"
-                  onClick={() => copyToClipboard(contract.address)}
-                >
-                  <Copy className={`w-3.5 h-3.5 ${copied ? 'text-green-500' : ''}`} />
-                </Button>
+              
+              <div className="flex items-center gap-3 group">
+                <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg flex items-center gap-3 transition-colors group-hover:bg-white/10 group-hover:border-white/20">
+                  <code className="text-xs text-slate-400 font-mono tracking-wider">{contract.address}</code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-slate-500 hover:text-white"
+                    onClick={() => copyToClipboard(contract.address)}
+                  >
+                    <Copy className={cn("w-3.5 h-3.5 transition-colors", copied ? 'text-mantle-green' : '')} />
+                  </Button>
+                </div>
+                <Badge variant="outline" className="border-white/10 text-slate-500 font-bold uppercase tracking-widest text-[10px]">
+                  {contract.network}
+                </Badge>
               </div>
             </div>
-            <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 px-3 py-1">
-              {contract.network}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-wrap gap-3">
-            <a href={explorerUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="gap-2 border-gray-700 hover:bg-gray-700 h-10">
-                <ExternalLink className="w-4 h-4" />
-                View on Explorer
-              </Button>
-            </a>
-            <Button variant="outline" className="gap-2 border-gray-700 hover:bg-gray-700 h-10">
-              <BarChart3 className="w-4 h-4 text-purple-400" />
-              Analytics
-            </Button>
-            <Button variant="outline" className="gap-2 border-gray-700 hover:bg-gray-700 h-10">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              Gas Usage
-            </Button>
+
+            <div className="flex gap-3">
+              <a href={explorerUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" className="h-11 px-6 border-white/10 bg-white/5 hover:bg-white/10 font-bold rounded-xl backdrop-blur-sm transition-all hover:scale-105">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Explorer
+                </Button>
+              </a>
+            </div>
           </div>
 
-          {contract.rwa_proof && (
-            <div className="pt-6 border-t border-gray-700/50 space-y-4">
-              <div className="flex items-center gap-2 text-blue-400">
-                <ShieldCheck className="w-5 h-5" />
-                <h3 className="font-bold">RWA Proof Manifest</h3>
+          {contract.is_anchored && (
+            <div className="pt-8 border-t border-white/5">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-2 h-2 rounded-full bg-mantle-green animate-pulse" />
+                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">Asset Manifest</h3>
               </div>
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
-                  <p className="text-[10px] uppercase text-gray-500 font-bold mb-1">Asset Type</p>
-                  <p className="text-sm text-gray-200">{contract.rwa_proof.assetType}</p>
-                </div>
-                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
-                  <p className="text-[10px] uppercase text-gray-500 font-bold mb-1">Custodian</p>
-                  <p className="text-sm text-gray-200">{contract.rwa_proof.custodian}</p>
-                </div>
-                <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
-                  <p className="text-[10px] uppercase text-gray-500 font-bold mb-1">NAV / Value</p>
-                  <p className="text-sm text-gray-200">{contract.rwa_proof.nav} {contract.rwa_proof.currency}</p>
-                </div>
-              </div>
-              <div className="bg-blue-500/5 p-3 rounded-lg border border-blue-500/20">
-                <p className="text-[10px] uppercase text-blue-400/60 font-bold mb-1">Cryptographic Manifest Hash</p>
-                <code className="text-xs text-blue-300 font-mono break-all">{contract.rwa_proof.manifestHash}</code>
+              <div className="grid sm:grid-cols-3 gap-6">
+                <ManifestItem icon={<Box className="w-4 h-4" />} label="Asset Type" value={contract.rwa_type || "N/A"} />
+                <ManifestItem icon={<UserCheck className="w-4 h-4" />} label="Custodian" value={contract.custodian || "N/A"} mono />
+                <ManifestItem icon={<Globe className="w-4 h-4" />} label="Jurisdiction" value={contract.jurisdiction || "N/A"} />
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
-            <Clock className="w-4 h-4 text-blue-400" />
-            Deployment Info
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Deployed At</p>
-            <p className="text-sm text-gray-300">{new Date(contract.deployed_at).toLocaleString()}</p>
-          </div>
+      <div className="glass-card hud-border p-8 space-y-8">
+        <div className="flex items-center gap-3">
+          <Clock className="w-5 h-5 text-blue-400" />
+          <h3 className="text-lg font-bold tracking-tight">Deployment Log</h3>
+        </div>
+        
+        <div className="space-y-6">
+          <LogItem label="Timestamp" value={new Date(contract.deployed_at).toLocaleString()} />
           
           {contract.verified_at && (
-            <div className="space-y-1">
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Verified At</p>
-              <p className="text-sm text-gray-300">{new Date(contract.verified_at).toLocaleString()}</p>
-            </div>
+            <LogItem label="Verification" value={new Date(contract.verified_at).toLocaleString()} highlight />
           )}
 
-          <div className="pt-4 border-t border-gray-700/50 space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Compiler</span>
-              <span className="text-gray-300 font-mono">v0.8.20</span>
+          <div className="pt-6 border-t border-white/5 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Compiler</span>
+              <span className="text-xs font-mono text-slate-300">v0.8.20</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Optimization</span>
-              <span className="text-gray-300">Enabled (200 runs)</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Optimization</span>
+              <span className="text-xs text-slate-300">Enabled (200 runs)</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">EVM Version</span>
+              <span className="text-xs text-slate-300">Paris</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ManifestItem({ icon, label, value, mono = false }: { icon: React.ReactNode, label: string, value: string, mono?: boolean }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2 text-slate-600">
+        {icon}
+        <p className="text-[9px] uppercase tracking-widest font-black">{label}</p>
+      </div>
+      <p className={cn(
+        "font-bold text-white tracking-tight",
+        mono ? "font-mono text-[10px] break-all text-slate-400" : "text-sm"
+      )}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function LogItem({ label, value, highlight = false }: { label: string, value: string, highlight?: boolean }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[9px] uppercase tracking-widest text-slate-600 font-black">{label}</p>
+      <p className={cn(
+        "text-sm font-bold",
+        highlight ? "text-mantle-green" : "text-slate-300"
+      )}>
+        {value}
+      </p>
     </div>
   );
 }

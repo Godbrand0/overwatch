@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { Loader2, AlertCircle, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Loader2, AlertCircle, ShieldAlert, ShieldCheck, Activity, Cpu } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ContractOverview } from "@/components/contract/ContractOverview";
@@ -72,22 +72,28 @@ export default function ContractLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
-        <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-        <p className="text-gray-400 text-lg">Loading contract dashboard...</p>
+      <div className="min-h-screen bg-mantle-dark flex flex-col items-center justify-center bg-grid">
+        <div className="relative">
+          <div className="w-24 h-24 border-4 border-mantle-green/20 border-t-mantle-green rounded-full animate-spin" />
+          <Cpu className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-mantle-green animate-pulse" />
+        </div>
+        <p className="mt-8 text-mantle-green font-mono tracking-widest animate-pulse uppercase">Synchronizing Asset Data...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 py-8">
+      <div className="min-h-screen bg-mantle-dark py-12 bg-grid">
         <div className="container mx-auto px-4">
-          <Alert variant="destructive" className="bg-red-900/20 border-red-900/50">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="glass-card hud-border p-8 border-red-500/20 bg-red-500/[0.02] max-w-2xl mx-auto text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">System Error</h2>
+            <p className="text-slate-400 font-mono text-sm mb-6">{error}</p>
+            <Button asChild variant="outline" className="border-white/10 hover:bg-white/5">
+              <a href="/dashboard">Return to Mission Control</a>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -96,29 +102,33 @@ export default function ContractLayout({
   const isVerified = !!contract.verified_at;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white pb-12">
-      <div className="container mx-auto px-4 space-y-6">
+    <div className="min-h-screen bg-mantle-dark text-white pb-20 bg-grid">
+      <div className="container mx-auto px-4 space-y-10 py-12">
         <ContractOverview contract={contract} />
 
         {!isVerified && (
-          <Alert className="bg-blue-500/10 border-blue-500/20 text-blue-400 animate-in fade-in slide-in-from-top-4 duration-500">
-            <ShieldAlert className="h-5 w-5" />
-            <div className="flex flex-col md:flex-row md:items-center justify-between w-full gap-4 ml-2">
-              <div>
-                <AlertTitle className="text-lg font-bold">Contract Not Verified</AlertTitle>
-                <AlertDescription className="text-blue-300/80">
-                  This contract has not been verified on Mantlescan. Verification is required to interact with read and write functions.
-                </AlertDescription>
+          <div className="glass-card hud-border p-6 bg-blue-500/[0.03] border-blue-500/20 animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                  <ShieldAlert className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight">Source Verification Required</h3>
+                  <p className="text-blue-300/60 text-sm font-medium">
+                    Interaction features are locked until the contract source is verified on Mantlescan.
+                  </p>
+                </div>
               </div>
               <Button
                 onClick={handleVerify}
                 disabled={verifying}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 shrink-0"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold h-12 px-8 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all hover:scale-105"
               >
                 {verifying ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Verifying...
+                    Verifying Source...
                   </>
                 ) : (
                   <>
@@ -128,12 +138,14 @@ export default function ContractLayout({
                 )}
               </Button>
             </div>
-          </Alert>
+          </div>
         )}
 
         <ContractNav address={address} isVerified={isVerified} />
 
-        <div className="contract-content">{children}</div>
+        <div className="contract-content animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {children}
+        </div>
       </div>
     </div>
   );

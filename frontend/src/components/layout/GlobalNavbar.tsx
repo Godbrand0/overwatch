@@ -2,31 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
-import { LayoutDashboard, Rocket, Github, Home } from "lucide-react";
+import { useEffect } from "react";
+import { Rocket, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import {
+  fetchUserData,
+  loginWithGithub,
+  logout,
+} from "@/store/slices/authSlice";
 
 export function GlobalNavbar() {
   const pathname = usePathname();
-  const [userData, setUserData] = useState<any>(null);
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated, isLoading } = useAppSelector(
+    (state) => state.auth
+  );
 
   useEffect(() => {
-    async function fetchUserData() {
-      try {
-        const response = await fetch("/api/user");
-        if (response.ok) {
-          const data = await response.json();
-          setUserData(data);
-        } else {
-          setUserData(null);
-        }
-      } catch (err) {
-        console.error("Failed to fetch user data for navbar:", err);
-      }
-    }
-    fetchUserData();
-  }, []);
+    // Try to fetch user data on component mount
+    dispatch(fetchUserData());
+  }, [dispatch]);
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-gray-800 bg-gray-900/80 backdrop-blur-md">
@@ -42,36 +39,38 @@ export function GlobalNavbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            <NavLink href="/" active={pathname === "/"}>
-              <Home className="w-4 h-4" />
-              Home
-            </NavLink>
-            <NavLink href="/dashboard" active={pathname.startsWith("/dashboard")}>
-              <LayoutDashboard className="w-4 h-4" />
+            <NavLink
+              href="/dashboard"
+              active={pathname.startsWith("/dashboard")}
+            >
               Dashboard
             </NavLink>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          {userData?.user ? (
+          {isAuthenticated && user ? (
             <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-full border border-gray-700">
-              <img 
-                src={userData.user.avatar_url} 
-                alt={userData.user.github_username} 
-                className="w-6 h-6 rounded-full" 
+              <img
+                src={user.avatar_url}
+                alt={user.github_username}
+                className="w-6 h-6 rounded-full"
               />
               <span className="text-sm font-medium hidden sm:inline">
-                {userData.user.github_username}
+                {user.github_username}
               </span>
             </div>
           ) : (
-            <Link href="/api/auth/github">
-              <Button variant="outline" size="sm" className="gap-2 border-gray-700 hover:bg-gray-800">
-                <Github className="w-4 h-4" />
-                Connect
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-gray-700 hover:bg-gray-800"
+              onClick={() => dispatch(loginWithGithub())}
+              disabled={isLoading}
+            >
+              <Github className="w-4 h-4" />
+              {isLoading ? "Connecting..." : "Connect"}
+            </Button>
           )}
           <ConnectButton />
         </div>
@@ -80,7 +79,15 @@ export function GlobalNavbar() {
   );
 }
 
-function NavLink({ href, children, active }: { href: string; children: React.ReactNode; active: boolean }) {
+function NavLink({
+  href,
+  children,
+  active,
+}: {
+  href: string;
+  children: React.ReactNode;
+  active: boolean;
+}) {
   return (
     <Link
       href={href}

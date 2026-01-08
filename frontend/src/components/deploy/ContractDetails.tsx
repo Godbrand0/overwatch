@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { Copy, Check, ChevronDown, ChevronUp, Zap, FileCode, Cpu } from "lucide-react";
 import { ConstructorForm } from "./ConstructorForm";
+import { cn } from "@/lib/utils";
 
 interface ContractDetailsProps {
   abi: any[];
@@ -25,73 +26,83 @@ export function ContractDetails({ abi, bytecode, onDeploy, deploying }: Contract
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 flex items-center justify-between">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="glass-card p-6 flex items-center justify-between group hover:bg-blue-500/[0.05] transition-colors border-blue-500/20">
           <div>
-            <p className="text-gray-400 text-sm">Estimated Gas</p>
-            <p className="text-xl font-mono text-blue-400">~0.0042 MNT</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Estimated Gas</p>
+            <p className="text-2xl font-black text-blue-400 font-mono tracking-tight">~0.0042 MNT</p>
           </div>
-          <Zap className="w-8 h-8 text-blue-500/20" />
+          <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20 group-hover:scale-110 transition-transform">
+            <Zap className="w-6 h-6" />
+          </div>
         </div>
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 flex items-center justify-between">
+        <div className="glass-card p-6 flex items-center justify-between group hover:bg-green-500/[0.05] transition-colors border-green-500/20">
           <div>
-            <p className="text-gray-400 text-sm">Compiler</p>
-            <p className="text-xl font-mono text-green-400">v0.8.20</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Compiler Version</p>
+            <p className="text-2xl font-black text-green-400 font-mono tracking-tight">v0.8.20</p>
           </div>
-          <Check className="w-8 h-8 text-green-500/20" />
+          <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-400 border border-green-500/20 group-hover:scale-110 transition-transform">
+            <Cpu className="w-6 h-6" />
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+      <div className="grid gap-4">
+        <div className="glass-card overflow-hidden border-white/5">
           <button 
             onClick={() => setShowAbi(!showAbi)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors group"
           >
-            <span className="font-semibold">Contract ABI</span>
-            {showAbi ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <div className="flex items-center gap-3">
+              <FileCode className="w-4 h-4 text-slate-500 group-hover:text-mantle-green transition-colors" />
+              <span className="font-bold text-sm uppercase tracking-wider text-slate-300 group-hover:text-white">Contract ABI</span>
+            </div>
+            {showAbi ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
           </button>
           {showAbi && (
-            <div className="p-6 pt-0 border-t border-gray-700">
+            <div className="p-6 pt-0 border-t border-white/5 bg-black/20">
               <div className="relative mt-4">
-                <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-xs font-mono text-gray-300 max-h-40">
+                <pre className="bg-black/40 p-4 rounded-xl overflow-x-auto text-[10px] font-mono text-slate-400 max-h-60 border border-white/5 custom-scrollbar">
                   {JSON.stringify(abi, null, 2)}
                 </pre>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="absolute top-2 right-2 h-8 w-8 p-0"
+                  className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-white/10 text-slate-400 hover:text-white"
                   onClick={() => copyToClipboard(JSON.stringify(abi), setCopiedAbi)}
                 >
-                  {copiedAbi ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  {copiedAbi ? <Check className="w-4 h-4 text-mantle-green" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
           )}
         </div>
 
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+        <div className="glass-card overflow-hidden border-white/5">
           <button 
             onClick={() => setShowBytecode(!showBytecode)}
-            className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition-colors group"
           >
-            <span className="font-semibold">Contract Bytecode</span>
-            {showBytecode ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <div className="flex items-center gap-3">
+              <Cpu className="w-4 h-4 text-slate-500 group-hover:text-mantle-green transition-colors" />
+              <span className="font-bold text-sm uppercase tracking-wider text-slate-300 group-hover:text-white">Bytecode</span>
+            </div>
+            {showBytecode ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
           </button>
           {showBytecode && (
-            <div className="p-6 pt-0 border-t border-gray-700">
+            <div className="p-6 pt-0 border-t border-white/5 bg-black/20">
               <div className="relative mt-4">
-                <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto text-xs font-mono text-gray-300 max-h-40 break-all whitespace-pre-wrap">
+                <pre className="bg-black/40 p-4 rounded-xl overflow-x-auto text-[10px] font-mono text-slate-400 max-h-60 break-all whitespace-pre-wrap border border-white/5 custom-scrollbar">
                   {bytecode}
                 </pre>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="absolute top-2 right-2 h-8 w-8 p-0"
+                  className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-white/10 text-slate-400 hover:text-white"
                   onClick={() => copyToClipboard(bytecode, setCopiedBytecode)}
                 >
-                  {copiedBytecode ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  {copiedBytecode ? <Check className="w-4 h-4 text-mantle-green" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
@@ -99,8 +110,11 @@ export function ContractDetails({ abi, bytecode, onDeploy, deploying }: Contract
         </div>
       </div>
 
-      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Constructor Arguments</h3>
+      <div className="glass-card hud-border p-8 bg-mantle-green/[0.02]">
+        <h3 className="text-lg font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-mantle-green animate-pulse" />
+          Constructor Parameters
+        </h3>
         <ConstructorForm 
           abi={abi}
           onDeploy={onDeploy}

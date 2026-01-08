@@ -13,9 +13,12 @@ import {
   ArrowRight, 
   Hash, 
   Layers, 
-  RefreshCw 
+  RefreshCw,
+  Cpu,
+  Activity
 } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface DeploymentStatusProps {
   status: "success" | "error";
@@ -61,41 +64,41 @@ export function DeploymentStatus({
   if (status === "error") {
     return (
       <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 mb-4">
-            <XCircle className="w-10 h-10 text-red-500" />
+        <div className="glass-card hud-border p-12 text-center bg-red-500/[0.02] border-red-500/20">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-500/10 border border-red-500/20 mb-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+            <XCircle className="w-12 h-12 text-red-500" />
           </div>
-          <h2 className="text-3xl font-bold text-white">Deployment Failed</h2>
-          <p className="text-gray-400 max-w-md mx-auto">
-            The transaction could not be completed on the network.
+          <h2 className="text-4xl font-black text-white mb-4 tracking-tight">Mission Failed</h2>
+          <p className="text-slate-400 max-w-md mx-auto mb-8 text-lg">
+            The deployment sequence was aborted due to a critical error.
           </p>
-        </div>
 
-        <div className="bg-red-900/10 border border-red-900/20 rounded-xl p-6 space-y-4">
-          <div className="flex items-start gap-3">
-            <Terminal className="w-5 h-5 text-red-500 mt-1 shrink-0" />
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-red-200">Error Reason</p>
-              <p className="text-sm text-red-300/80 font-mono break-all">
-                {error || "Unknown deployment error. Please check your wallet and network connection."}
-              </p>
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-left max-w-2xl mx-auto mb-8">
+            <div className="flex items-start gap-4">
+              <Terminal className="w-6 h-6 text-red-500 mt-1 shrink-0" />
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-red-400">Error Log</p>
+                <p className="text-sm text-red-200 font-mono break-all leading-relaxed">
+                  {error || "Unknown deployment error. Please check your wallet and network connection."}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button 
-            onClick={onRetry}
-            className="bg-blue-600 hover:bg-blue-700 px-8 h-12 text-lg"
-          >
-            <RefreshCw className="w-5 h-5 mr-2" />
-            Retry Deployment
-          </Button>
-          <Link href="/repos">
-            <Button variant="ghost" className="h-12 text-gray-400 hover:text-white">
-              Back to Repos
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              onClick={onRetry}
+              className="bg-red-500 hover:bg-red-600 text-white h-12 px-8 font-bold rounded-xl shadow-lg shadow-red-500/20"
+            >
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Retry Sequence
             </Button>
-          </Link>
+            <Link href="/repos">
+              <Button variant="outline" className="h-12 border-white/10 hover:bg-white/5 text-slate-400 hover:text-white rounded-xl">
+                Abort to Base
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -103,135 +106,158 @@ export function DeploymentStatus({
 
   return (
     <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 mb-4">
-          <CheckCircle2 className="w-10 h-10 text-green-500" />
+      <div className="glass-card hud-border p-12 text-center bg-mantle-green/[0.02] relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-mantle-green to-transparent opacity-50" />
+        
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-mantle-green/10 border border-mantle-green/20 mb-6 shadow-[0_0_30px_rgba(0,255,209,0.2)] animate-pulse">
+          <CheckCircle2 className="w-12 h-12 text-mantle-green" />
         </div>
-        <h2 className="text-3xl font-bold">Deployment Successful!</h2>
-        <p className="text-gray-400 max-w-md mx-auto">
-          Your contract has been successfully deployed to Mantle Sepolia Testnet.
+        <h2 className="text-4xl font-black text-white mb-4 tracking-tight">Mission Accomplished</h2>
+        <p className="text-slate-400 max-w-md mx-auto text-lg">
+          Asset successfully deployed and active on Mantle Sepolia Testnet.
         </p>
       </div>
 
-      <div className="grid gap-4">
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 space-y-6">
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-gray-500 text-xs uppercase tracking-widest font-bold">
+      <div className="grid gap-6">
+        <div className="glass-card p-8 space-y-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Activity className="w-5 h-5 text-mantle-green" />
+            <h3 className="text-lg font-bold uppercase tracking-widest">Deployment Telemetry</h3>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-2 group">
+              <div className="flex items-center gap-2 text-slate-500 text-[10px] uppercase tracking-widest font-bold group-hover:text-mantle-green transition-colors">
                 <Hash className="w-3.5 h-3.5" />
                 Contract Address
               </div>
-              <div className="flex items-center gap-2">
-                <code className="bg-gray-900 px-2 py-1 rounded text-blue-400 text-xs font-mono truncate">
+              <div className="flex items-center gap-3 p-3 bg-black/20 rounded-xl border border-white/5 group-hover:border-mantle-green/30 transition-colors">
+                <code className="text-mantle-green text-sm font-mono truncate flex-1">
                   {contractAddress}
                 </code>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => copyToClipboard(contractAddress!, setCopiedAddr)}>
-                  {copiedAddr ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
-                <a href={`${explorerUrl}/address/${contractAddress}`} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white">
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10 hover:text-white text-slate-500" onClick={() => copyToClipboard(contractAddress!, setCopiedAddr)}>
+                    {copiedAddr ? <Check className="w-4 h-4 text-mantle-green" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                  <a href={`${explorerUrl}/address/${contractAddress}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center h-8 w-8 rounded-md hover:bg-white/10 hover:text-white text-slate-500 transition-colors">
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-gray-500 text-xs uppercase tracking-widest font-bold">
+            <div className="space-y-2 group">
+              <div className="flex items-center gap-2 text-slate-500 text-[10px] uppercase tracking-widest font-bold group-hover:text-mantle-green transition-colors">
                 <Layers className="w-3.5 h-3.5" />
                 Transaction Hash
               </div>
-              <div className="flex items-center gap-2">
-                <code className="bg-gray-900 px-2 py-1 rounded text-gray-400 text-xs font-mono truncate">
-                  {txHash?.substring(0, 10)}...{txHash?.substring(txHash.length - 8)}
+              <div className="flex items-center gap-3 p-3 bg-black/20 rounded-xl border border-white/5 group-hover:border-mantle-green/30 transition-colors">
+                <code className="text-blue-400 text-sm font-mono truncate flex-1">
+                  {txHash}
                 </code>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => copyToClipboard(txHash!, setCopiedTx)}>
-                  {copiedTx ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
-                <a href={`${explorerUrl}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white">
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10 hover:text-white text-slate-500" onClick={() => copyToClipboard(txHash!, setCopiedTx)}>
+                    {copiedTx ? <Check className="w-4 h-4 text-mantle-green" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                  <a href={`${explorerUrl}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center h-8 w-8 rounded-md hover:bg-white/10 hover:text-white text-slate-500 transition-colors">
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-gray-700/50">
-            <div className="space-y-1">
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Block Number</p>
-              <p className="text-sm font-mono text-gray-300">{blockNumber?.toString() || "Pending"}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Nonce</p>
-              <p className="text-sm font-mono text-gray-300">{nonce?.toString() || "0"}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Network</p>
-              <p className="text-sm text-blue-400">Mantle Sepolia</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Status</p>
-              <p className="text-sm text-green-500">Confirmed</p>
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-white/5">
+            <TelemetryItem label="Block Height" value={blockNumber?.toString() || "Pending"} />
+            <TelemetryItem label="Nonce" value={nonce?.toString() || "0"} />
+            <TelemetryItem label="Network" value="Mantle Sepolia" highlight />
+            <TelemetryItem label="Status" value="Confirmed" success />
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 flex flex-col justify-between">
-            <div className="flex items-center gap-3 mb-4">
-              <Terminal className="w-5 h-5 text-blue-400" />
-              <h3 className="font-semibold">Contract ABI</h3>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="glass-card p-6 flex flex-col justify-between group hover:border-white/20 transition-colors">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                <Terminal className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Contract ABI</h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Interface Definition</p>
+              </div>
             </div>
             <Button 
               variant="outline" 
-              className="w-full border-gray-700 hover:bg-gray-700"
+              className="w-full border-white/10 hover:bg-white/5 text-slate-300 hover:text-white h-10"
               onClick={() => copyToClipboard(JSON.stringify(abi), setCopiedAbi)}
             >
-              {copiedAbi ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-              Copy ABI
+              {copiedAbi ? <Check className="w-4 h-4 mr-2 text-mantle-green" /> : <Copy className="w-4 h-4 mr-2" />}
+              Copy JSON
             </Button>
           </div>
 
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 flex flex-col justify-between">
-            <div className="flex items-center gap-3 mb-4">
-              <Terminal className="w-5 h-5 text-purple-400" />
-              <h3 className="font-semibold">Bytecode</h3>
+          <div className="glass-card p-6 flex flex-col justify-between group hover:border-white/20 transition-colors">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                <Cpu className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Bytecode</h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Compiled Binary</p>
+              </div>
             </div>
             <Button 
               variant="outline" 
-              className="w-full border-gray-700 hover:bg-gray-700"
+              className="w-full border-white/10 hover:bg-white/5 text-slate-300 hover:text-white h-10"
               onClick={() => copyToClipboard(bytecode!, setCopiedBytecode)}
             >
-              {copiedBytecode ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-              Copy Bytecode
+              {copiedBytecode ? <Check className="w-4 h-4 mr-2 text-mantle-green" /> : <Copy className="w-4 h-4 mr-2" />}
+              Copy Hex
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-8 text-center space-y-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-500/20 mb-2">
-          <ShieldCheck className="w-6 h-6 text-blue-400" />
+      <div className="glass-card hud-border p-8 text-center space-y-8 bg-blue-500/[0.02] border-blue-500/20">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 mb-2 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+          <ShieldCheck className="w-8 h-8 text-blue-400" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-xl font-bold">Verify Your Contract</h3>
-          <p className="text-gray-400 text-sm max-w-sm mx-auto">
-            Verification allows users to interact with your contract directly on the explorer and builds trust.
+          <h3 className="text-2xl font-bold text-white">Verify Asset Source</h3>
+          <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+            Verification publishes your source code to Mantlescan, enabling public auditability and unlocking interaction features in Mission Control.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
             onClick={onVerify}
             disabled={verifying}
-            className="bg-blue-600 hover:bg-blue-700 px-8 h-12 text-lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white h-12 px-8 font-bold rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all hover:scale-105"
           >
-            {verifying ? "Verifying..." : "Verify Now"}
+            {verifying ? "Verifying Source..." : "Verify Now"}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
           <Link href={`/contract/${contractAddress}`}>
-            <Button variant="ghost" className="h-12 text-gray-400 hover:text-white">
-              Skip for now
+            <Button variant="ghost" className="h-12 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl">
+              Skip to Dashboard
             </Button>
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+function TelemetryItem({ label, value, highlight = false, success = false }: { label: string, value: string, highlight?: boolean, success?: boolean }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">{label}</p>
+      <p className={cn(
+        "text-sm font-bold font-mono",
+        highlight ? "text-blue-400" : success ? "text-mantle-green" : "text-slate-300"
+      )}>
+        {value}
+      </p>
     </div>
   );
 }

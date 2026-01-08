@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Terminal, Activity, History, TestTube, ShieldCheck } from "lucide-react";
+import { Terminal, Activity, History, TestTube, ShieldCheck, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ContractNavProps {
@@ -13,31 +13,31 @@ interface ContractNavProps {
 const navItems = [
   {
     href: "",
-    label: "Dashboard",
+    label: "Overview",
     icon: Terminal,
     requiresVerification: false,
   },
   {
     href: "/tests",
-    label: "Tests",
+    label: "Test Suite",
     icon: TestTube,
     requiresVerification: false,
   },
   {
     href: "/rwa",
-    label: "Compliance",
+    label: "Legal Vault",
     icon: ShieldCheck,
     requiresVerification: false,
   },
   {
     href: "/monitoring",
-    label: "Monitoring",
+    label: "Live Feed",
     icon: Activity,
     requiresVerification: true,
   },
   {
     href: "/history",
-    label: "History",
+    label: "Archive",
     icon: History,
     requiresVerification: true,
   },
@@ -48,8 +48,8 @@ export function ContractNav({ address, isVerified }: ContractNavProps) {
   const basePath = `/contract/${address}`;
 
   return (
-    <nav className="bg-gray-800/80 border-b border-gray-700 -mx-4 px-4 py-4 mb-8 backdrop-blur-sm">
-      <div className="flex items-center gap-1 overflow-x-auto">
+    <nav className="glass-card hud-border p-1 bg-white/[0.02] overflow-hidden">
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
         {navItems.map((item) => {
           const isActive = pathname === `${basePath}${item.href}`;
           const isLocked = item.requiresVerification && !isVerified;
@@ -60,19 +60,27 @@ export function ContractNav({ address, isVerified }: ContractNavProps) {
               key={item.href}
               href={isLocked ? "#" : `${basePath}${item.href}`}
               className={cn(
-                "flex items-center gap-2 px-6 py-3 font-semibold transition-all whitespace-nowrap relative",
+                "flex items-center gap-3 px-6 py-4 font-bold transition-all whitespace-nowrap relative group",
                 isActive && !isLocked
-                  ? "text-blue-400 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-400"
+                  ? "text-mantle-green bg-mantle-green/10"
                   : isLocked
-                  ? "text-gray-600 cursor-not-allowed"
-                  : "text-gray-400 hover:text-white hover:bg-gray-700/30"
+                  ? "text-slate-600 cursor-not-allowed"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
               )}
               onClick={(e) => isLocked && e.preventDefault()}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-sm uppercase tracking-wide">{item.label}</span>
+              <Icon className={cn(
+                "w-4 h-4 transition-transform group-hover:scale-110",
+                isActive ? "text-mantle-green" : "text-slate-500"
+              )} />
+              <span className="text-[10px] uppercase tracking-[0.2em]">{item.label}</span>
+              
+              {isActive && !isLocked && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-mantle-green shadow-[0_0_10px_rgba(0,255,209,0.5)]" />
+              )}
+              
               {isLocked && (
-                <span className="ml-1 text-xs opacity-60">🔒</span>
+                <Lock className="w-3 h-3 ml-1 opacity-40" />
               )}
             </Link>
           );

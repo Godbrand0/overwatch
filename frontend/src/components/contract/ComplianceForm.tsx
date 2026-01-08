@@ -106,9 +106,12 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save anchor data to backend");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Failed to save anchor data to backend (${response.status})`;
+        console.error("Backend error response:", errorData);
+        throw new Error(errorMessage);
       }
-      
+
       onAnchored(mockTxHash, formData);
       
     } catch (err) {
