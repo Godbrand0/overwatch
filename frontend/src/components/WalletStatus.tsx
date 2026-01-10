@@ -20,6 +20,7 @@ export function WalletStatus() {
         return "Unknown Network";
     }
   };
+  //new qaYBJSDV
 
   const formatAddress = (address: string | null) => {
     if (!address) return "";
@@ -66,17 +67,6 @@ export function WalletStatus() {
           </div>
         )}
 
-        {/* Network */}
-        {chainId && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Network:</span>
-            <div className="flex items-center gap-2">
-              <Network className="w-4 h-4" />
-              <span className="text-sm">{getChainName(chainId)}</span>
-            </div>
-          </div>
-        )}
-
         {/* Loading State */}
         {isConnecting && (
           <div className="flex items-center justify-center py-2">
@@ -98,9 +88,6 @@ export function WalletStatus() {
           <div className="text-center py-4">
             <p className="text-sm text-gray-600 mb-3">
               Connect your wallet to interact with smart contracts
-            </p>
-            <p className="text-xs text-gray-500">
-              Supported networks: Mantle Sepolia Testnet, Mantle Mainnet
             </p>
           </div>
         )}

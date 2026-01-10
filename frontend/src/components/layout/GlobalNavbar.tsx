@@ -72,7 +72,7 @@ export function GlobalNavbar() {
               {isLoading ? "Connecting..." : "Connect"}
             </Button>
           )}
-          <ConnectButton />
+          <ConnectButton chainStatus="none" />
         </div>
       </div>
     </nav>
