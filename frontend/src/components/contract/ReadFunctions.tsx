@@ -129,7 +129,9 @@ function FunctionCard({ fn, address }: { fn: any; address: string }) {
               <div className="mt-4 p-3 bg-gray-800 rounded border border-gray-700">
                 <p className="text-xs text-gray-500 uppercase mb-1">Result</p>
                 <p className="font-mono text-sm text-blue-400 break-all">
-                  {typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data)}
+                  {typeof data === 'object' ? JSON.stringify(data, (key, value) =>
+                    typeof value === 'bigint' ? value.toString() : value
+                  , 2) : String(data)}
                 </p>
               </div>
             )}

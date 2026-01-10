@@ -28,7 +28,7 @@ function WalletSync() {
         setWalletConnection({
           address,
           chainId,
-          connector,
+          connectorName: connector?.name || null,
         })
       );
     } else if (!isConnected) {

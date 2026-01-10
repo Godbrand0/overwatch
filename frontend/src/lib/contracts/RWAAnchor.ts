@@ -250,4 +250,4 @@ export const RWA_ANCHOR_ABI = [
 ] as const;
 
 // This is the deployed address on Mantle Sepolia
-export const RWA_ANCHOR_ADDRESS = "0xADaF4e678BcDfb626a439bD18f67F3475539c055";
+export const RWA_ANCHOR_ADDRESS = "0x84f69acf61f5cc1d19c0c4a65665f5a776acdee5";

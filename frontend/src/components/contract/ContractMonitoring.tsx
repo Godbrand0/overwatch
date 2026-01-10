@@ -518,7 +518,9 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
                         {Object.keys(event.args).length > 0 && (
                           <div className="mt-2 p-2 bg-gray-800/50 rounded border border-gray-700/50">
                             <code className="text-xs text-gray-400">
-                              {JSON.stringify(event.args, null, 2)}
+                              {JSON.stringify(event.args, (key, value) =>
+                                typeof value === 'bigint' ? value.toString() : value
+                              , 2)}
                             </code>
                           </div>
                         )}

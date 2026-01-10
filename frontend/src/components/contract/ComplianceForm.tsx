@@ -52,10 +52,19 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
     appraiserId: ""
   });
 
-  const { writeContract, data: hash, isPending, isError } = useWriteContract();
+  const { writeContract, data: hash, isPending, isError, error: contractError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   });
+
+  // Log contract errors for debugging
+  useEffect(() => {
+    if (contractError) {
+      console.error("Contract error:", contractError);
+      setError(contractError.message || "Transaction failed");
+      setLoading(false);
+    }
+  }, [contractError]);
 
   // Handle transaction confirmation and backend update
   useEffect(() => {
@@ -129,10 +138,41 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
         throw new Error("Please upload a legal document");
       }
 
+      // Validate contract address format
+      if (!contractAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+        throw new Error("Invalid contract address format");
+      }
+
       // Validate custodian address format
       if (!formData.custodian.match(/^0x[a-fA-F0-9]{40}$/)) {
-        throw new Error("Invalid custodian address format");
+        throw new Error("Invalid custodian address format. Must be a valid Ethereum address (0x...)");
       }
+
+      // Validate jurisdiction is not empty
+      if (!formData.jurisdiction || formData.jurisdiction.trim() === "") {
+        throw new Error("Jurisdiction cannot be empty");
+      }
+
+      // Validate offchain asset ID is not empty
+      if (!formData.offchainAssetId || formData.offchainAssetId.trim() === "") {
+        throw new Error("Off-chain Asset ID cannot be empty");
+      }
+
+      // Ensure fileHash is exactly 66 characters (0x + 64 hex chars)
+      if (fileHash.length !== 66) {
+        throw new Error(`Invalid file hash length: ${fileHash.length}. Expected 66 characters.`);
+      }
+
+      const contractArgs = [
+        contractAddress as `0x${string}`,
+        parseInt(formData.rwaType),
+        parseInt(formData.legalRight),
+        formData.jurisdiction,
+        formData.redeemable === "true",
+        formData.custodian as `0x${string}`,
+        fileHash as `0x${string}`,
+        formData.offchainAssetId
+      ];
 
       console.log("Calling RWAAnchor.registerAsset with:", {
         contractAddress,
@@ -142,24 +182,18 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
         redeemable: formData.redeemable === "true",
         custodian: formData.custodian,
         legalDocHash: fileHash,
+        legalDocHashLength: fileHash.length,
         offchainAssetId: formData.offchainAssetId
       });
+
+      console.log("Contract args:", contractArgs);
 
       // Call the smart contract to register the asset
       writeContract({
         address: RWA_ANCHOR_ADDRESS as `0x${string}`,
         abi: RWA_ANCHOR_ABI,
         functionName: "registerAsset",
-        args: [
-          contractAddress as `0x${string}`,
-          parseInt(formData.rwaType),
-          parseInt(formData.legalRight),
-          formData.jurisdiction,
-          formData.redeemable === "true",
-          formData.custodian as `0x${string}`,
-          fileHash as `0x${string}`,
-          formData.offchainAssetId
-        ]
+        args: contractArgs as any
       });
 
     } catch (err: any) {

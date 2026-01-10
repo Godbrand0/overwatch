@@ -5,7 +5,7 @@ interface WalletState {
   address: string | null;
   isConnected: boolean;
   chainId: number | null;
-  connector: any | null;
+  connectorName: string | null;
   isConnecting: boolean;
   error: string | null;
 }
@@ -14,7 +14,7 @@ const initialState: WalletState = {
   address: null,
   isConnected: false,
   chainId: null,
-  connector: null,
+  connectorName: null,
   isConnecting: false,
   error: null,
 };
@@ -28,19 +28,19 @@ const walletSlice = createSlice({
       action: PayloadAction<{
         address: string;
         chainId: number;
-        connector: any;
+        connectorName: string | null;
       }>
     ) => {
       state.address = action.payload.address;
       state.chainId = action.payload.chainId;
-      state.connector = action.payload.connector;
+      state.connectorName = action.payload.connectorName;
       state.isConnected = true;
       state.error = null;
     },
     setWalletDisconnect: (state) => {
       state.address = null;
       state.chainId = null;
-      state.connector = null;
+      state.connectorName = null;
       state.isConnected = false;
       state.error = null;
     },
