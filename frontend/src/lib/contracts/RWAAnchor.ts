@@ -1,6 +1,25 @@
 export const RWA_ANCHOR_ABI = [
   {
     "type": "function",
+    "name": "anchoredAssets",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "assetRegistry",
     "inputs": [
       {
@@ -36,11 +55,6 @@ export const RWA_ANCHOR_ABI = [
         "internalType": "address"
       },
       {
-        "name": "legalDocHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
         "name": "deployer",
         "type": "address",
         "internalType": "address"
@@ -52,6 +66,26 @@ export const RWA_ANCHOR_ABI = [
       },
       {
         "name": "timestamp",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenName",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "tokenSymbol",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "totalSupply",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nav",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -83,6 +117,9 @@ export const RWA_ANCHOR_ABI = [
     ],
     "outputs": [
       {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct RWAAnchor.RWAProfile",
         "components": [
           {
             "name": "rwaType",
@@ -110,9 +147,9 @@ export const RWA_ANCHOR_ABI = [
             "internalType": "address"
           },
           {
-            "name": "legalDocHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
+            "name": "legalDocHashes",
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
           },
           {
             "name": "deployer",
@@ -128,11 +165,28 @@ export const RWA_ANCHOR_ABI = [
             "name": "timestamp",
             "type": "uint256",
             "internalType": "uint256"
+          },
+          {
+            "name": "tokenName",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "tokenSymbol",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "totalSupply",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "nav",
+            "type": "uint256",
+            "internalType": "uint256"
           }
-        ],
-        "name": "",
-        "type": "tuple",
-        "internalType": "struct RWAAnchor.RWAProfile"
+        ]
       }
     ],
     "stateMutability": "view"
@@ -186,19 +240,39 @@ export const RWA_ANCHOR_ABI = [
         "internalType": "bool"
       },
       {
-        "name": " _custodian",
+        "name": "_custodian",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "_legalDocHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "_legalDocHashes",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
       },
       {
         "name": "_offchainAssetId",
         "type": "string",
         "internalType": "string"
+      },
+      {
+        "name": "_tokenName",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "_tokenSymbol",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "_totalSupply",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_nav",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -233,13 +307,37 @@ export const RWA_ANCHOR_ABI = [
         "internalType": "enum RWAAnchor.LegalRight"
       },
       {
-        "name": "legalDocHash",
-        "type": "bytes32",
+        "name": "legalDocHashes",
+        "type": "bytes32[]",
         "indexed": false,
-        "internalType": "bytes32"
+        "internalType": "bytes32[]"
       },
       {
         "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenName",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "tokenSymbol",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "totalSupply",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "nav",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
