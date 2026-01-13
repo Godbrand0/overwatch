@@ -396,7 +396,7 @@ export default function DeployPage({ params }: { params: Promise<{ repoId: strin
 
   return (
     <div className="min-h-screen bg-mantle-dark text-white py-12 bg-grid">
-      <div className="container mx-auto px-4 max-w-6xl">
+      <div className="container mx-auto px-4 max-w-8xl">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <div className="space-y-3">
