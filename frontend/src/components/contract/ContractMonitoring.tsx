@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Zap, TrendingUp, Users, DollarSign, AlertCircle, CheckCircle2, Radio, Gauge, Clock, Database } from "lucide-react";
 import { usePublicClient } from "wagmi";
-import { formatEther, decodeEventLog } from "viem";
+import { formatEther, decodeEventLog, formatUnits } from "viem";
 import { MANTLE_NETWORKS } from "@/lib/mantle";
 
 interface ContractMonitoringProps {
@@ -244,8 +244,8 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
         const avgGas = totalGas / BigInt(blocksToFetch);
 
         setNetworkStats({
-          gasPrice: formatEther(gasPrice, "gwei"),
-          avgGasPrice: formatEther(avgGas, "gwei"),
+          gasPrice: formatUnits(gasPrice, 9),
+          avgGasPrice: formatUnits(avgGas, 9),
           blockTime: currentBlockTime,
           avgBlockTime: avgBlockTime,
         });
@@ -409,13 +409,13 @@ export function ContractMonitoring({ address, abi, contractName, deployedBlockNu
                 <div className="text-2xl font-bold text-white">
                   {parseFloat(networkStats.gasPrice).toFixed(4)}
                 </div>
-                <p className="text-xs text-gray-500">Current (MNT)</p>
+                <p className="text-xs text-gray-500">Current (Gwei)</p>
               </div>
               <div className="text-right">
                 <div className="text-lg font-semibold text-gray-300">
                   {parseFloat(networkStats.avgGasPrice).toFixed(4)}
                 </div>
-                <p className="text-xs text-gray-500">Avg (10 blks)</p>
+                <p className="text-xs text-gray-500">Avg (Gwei)</p>
               </div>
             </div>
           </CardContent>

@@ -30,11 +30,11 @@ export function GlobalNavbar() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-              <Rocket className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 flex items-center justify-center transition-transform group-hover:scale-110 overflow-hidden rounded-full">
+              <img src="/logo.png" alt="Overwatch Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-purple-600">
-              MantleForge
+            <span className="text-xl font-bold tracking-tight text-white -ml-1">
+              verwatch
             </span>
           </Link>
 
@@ -44,6 +44,12 @@ export function GlobalNavbar() {
               active={pathname.startsWith("/dashboard")}
             >
               Dashboard
+            </NavLink>
+            <NavLink
+              href="/assets"
+              active={pathname.startsWith("/assets")}
+            >
+              Assets
             </NavLink>
           </div>
         </div>

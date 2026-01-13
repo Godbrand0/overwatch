@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, ChevronDown, ChevronUp, Zap, FileCode, Cpu } from "lucide-react";
+import { Copy, Check, ChevronDown, ChevronUp, Zap, FileCode, Cpu, Loader2 } from "lucide-react";
 import { ConstructorForm } from "./ConstructorForm";
 import { cn } from "@/lib/utils";
+import { usePublicClient } from "wagmi";
+import { formatEther, formatGwei } from "viem";
 
 interface ContractDetailsProps {
   abi: any[];
@@ -18,6 +20,36 @@ export function ContractDetails({ abi, bytecode, onDeploy, deploying }: Contract
   const [copiedBytecode, setCopiedBytecode] = useState(false);
   const [showAbi, setShowAbi] = useState(false);
   const [showBytecode, setShowBytecode] = useState(false);
+  const [estimatedFee, setEstimatedFee] = useState<string | null>(null);
+  const [estimating, setEstimating] = useState(false);
+
+  const publicClient = usePublicClient();
+
+  useEffect(() => {
+    const estimateGas = async () => {
+      if (!publicClient || !bytecode) return;
+      setEstimating(true);
+      try {
+        const gasPrice = await publicClient.getGasPrice();
+        // Estimate gas for bytecode only (baseline)
+        const gasLimit = await publicClient.estimateGas({
+          data: bytecode as `0x${string}`,
+        });
+        
+        // Add 20% buffer for constructor and L1 fees
+        const totalGas = (gasLimit * 120n) / 100n;
+        const fee = totalGas * gasPrice;
+        setEstimatedFee(formatEther(fee));
+      } catch (err) {
+        console.error("Gas estimation failed:", err);
+        setEstimatedFee("0.0042"); // Fallback to a reasonable default if estimation fails
+      } finally {
+        setEstimating(false);
+      }
+    };
+
+    estimateGas();
+  }, [publicClient, bytecode]);
 
   const copyToClipboard = (text: string, setter: (v: boolean) => void) => {
     navigator.clipboard.writeText(text);
@@ -31,7 +63,16 @@ export function ContractDetails({ abi, bytecode, onDeploy, deploying }: Contract
         <div className="glass-card p-6 flex items-center justify-between group hover:bg-blue-500/[0.05] transition-colors border-blue-500/20">
           <div>
             <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Estimated Gas</p>
-            <p className="text-2xl font-black text-blue-400 font-mono tracking-tight">~0.0042 MNT</p>
+            {estimating ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                <span className="text-sm text-slate-500">Calculating...</span>
+              </div>
+            ) : (
+              <p className="text-2xl font-black text-blue-400 font-mono tracking-tight">
+                ~{estimatedFee ? parseFloat(estimatedFee).toFixed(6) : "0.0042"} MNT
+              </p>
+            )}
           </div>
           <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20 group-hover:scale-110 transition-transform">
             <Zap className="w-6 h-6" />

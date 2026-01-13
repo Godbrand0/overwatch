@@ -5,8 +5,8 @@ import { GlobalNavbar } from "@/components/layout/GlobalNavbar";
 import Marquee from "@/components/ui/Marquee";
 
 export const metadata: Metadata = {
-  title: "MantleForge - Deploy to Mantle in One Click",
-  description: "GitHub-native DevOps dashboard for Mantle smart contracts",
+  title: "Overwatch - Institutional RWA Gateway",
+  description: "Mission Control for Real-World Assets on Mantle",
 };
 
 export default function RootLayout({

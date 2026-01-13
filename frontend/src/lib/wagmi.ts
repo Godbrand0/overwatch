@@ -7,7 +7,7 @@ import { http } from "wagmi";
  * Reference: https://www.rainbowkit.com/docs/installation
  */
 export const config = getDefaultConfig({
-  appName: "MantleForge",
+  appName: "Overwatch",
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "YOUR_WALLETCONNECT_PROJECT_ID", // Get from https://cloud.walletconnect.com/
   chains: [mantleSepoliaTestnet, mantle],
   transports: {

@@ -25,8 +25,12 @@ export async function POST(
       jurisdiction,
       custodian,
       offchainAssetId,
-      legalDocHash,
-      appraiserId
+      legalDocHashes,
+      appraiserId,
+      tokenName,
+      tokenSymbol,
+      totalSupply,
+      nav,
     } = body;
 
     console.log("Anchoring contract:", address, "for user:", userId);
@@ -41,8 +45,12 @@ export async function POST(
         jurisdiction: jurisdiction,
         custodian: custodian,
         offchain_asset_id: offchainAssetId,
-        legal_doc_hash: legalDocHash,
-        appraiser_id: appraiserId
+        legal_doc_hashes: legalDocHashes, // Store as JSON array
+        appraiser_id: appraiserId,
+        token_name: tokenName,
+        token_symbol: tokenSymbol,
+        total_supply: totalSupply,
+        nav: nav,
       })
       .eq("address", address.trim().toLowerCase())
       .eq("user_id", userId) // Ensure only the owner can anchor

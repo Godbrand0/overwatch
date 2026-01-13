@@ -39,8 +39,8 @@ interface ComplianceFormProps {
 
 export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormProps) {
   const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [fileHash, setFileHash] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileHashes, setFileHashes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     rwaType: RWAType.REAL_ESTATE.toString(),
@@ -49,7 +49,11 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
     redeemable: "true",
     custodian: "",
     offchainAssetId: "",
-    appraiserId: ""
+    appraiserId: "",
+    tokenName: "",
+    tokenSymbol: "",
+    totalSupply: "",
+    nav: ""
   });
 
   const { writeContract, data: hash, isPending, isError, error: contractError } = useWriteContract();
@@ -89,8 +93,12 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
               jurisdiction: formData.jurisdiction,
               custodian: formData.custodian,
               offchainAssetId: formData.offchainAssetId,
-              legalDocHash: fileHash,
-              appraiserId: formData.appraiserId
+              legalDocHashes: fileHashes,
+              appraiserId: formData.appraiserId,
+              tokenName: formData.tokenName,
+              tokenSymbol: formData.tokenSymbol,
+              totalSupply: formData.totalSupply,
+              nav: formData.nav
             })
           });
 
@@ -112,20 +120,33 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
     };
 
     saveToBackend();
-  }, [isConfirmed, hash, contractAddress, formData, fileHash, onAnchored]);
+  }, [isConfirmed, hash, contractAddress, formData, fileHashes, onAnchored]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length > 0) {
+      setFiles(selectedFiles);
       
-      // Generate SHA-256 hash locally
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-      setFileHash("0x" + hashHex);
+      // Generate SHA-256 hashes for all files
+      const hashes = await Promise.all(
+        selectedFiles.map(async (file) => {
+          const arrayBuffer = await file.arrayBuffer();
+          const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+          return "0x" + hashHex;
+        })
+      );
+      
+      setFileHashes(hashes);
     }
+  };
+
+  const removeFile = (index: number) => {
+    const newFiles = files.filter((_, i) => i !== index);
+    const newHashes = fileHashes.filter((_, i) => i !== index);
+    setFiles(newFiles);
+    setFileHashes(newHashes);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -134,8 +155,8 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
     setError(null);
 
     try {
-      if (!fileHash) {
-        throw new Error("Please upload a legal document");
+      if (fileHashes.length === 0) {
+        throw new Error("Please upload at least one legal document");
       }
 
       // Validate contract address format
@@ -158,9 +179,11 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
         throw new Error("Off-chain Asset ID cannot be empty");
       }
 
-      // Ensure fileHash is exactly 66 characters (0x + 64 hex chars)
-      if (fileHash.length !== 66) {
-        throw new Error(`Invalid file hash length: ${fileHash.length}. Expected 66 characters.`);
+      // Ensure all fileHashes are exactly 66 characters (0x + 64 hex chars)
+      for (const hash of fileHashes) {
+        if (hash.length !== 66) {
+          throw new Error(`Invalid file hash length: ${hash.length}. Expected 66 characters.`);
+        }
       }
 
       const contractArgs = [
@@ -170,8 +193,12 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
         formData.jurisdiction,
         formData.redeemable === "true",
         formData.custodian as `0x${string}`,
-        fileHash as `0x${string}`,
-        formData.offchainAssetId
+        fileHashes as `0x${string}`[],
+        formData.offchainAssetId,
+        formData.tokenName,
+        formData.tokenSymbol,
+        formData.totalSupply,
+        formData.nav
       ];
 
       console.log("Calling RWAAnchor.registerAsset with:", {
@@ -181,8 +208,8 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
         jurisdiction: formData.jurisdiction,
         redeemable: formData.redeemable === "true",
         custodian: formData.custodian,
-        legalDocHash: fileHash,
-        legalDocHashLength: fileHash.length,
+        legalDocHashes: fileHashes,
+        legalDocHashesLength: fileHashes.length,
         offchainAssetId: formData.offchainAssetId
       });
 
@@ -217,6 +244,49 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label>Token Name</Label>
+              <Input
+                placeholder="e.g., Manhattan Prime Real Estate"
+                className="bg-gray-900 border-gray-700"
+                value={formData.tokenName}
+                onChange={(e) => setFormData({...formData, tokenName: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Token Symbol</Label>
+              <Input
+                placeholder="e.g., MPRE"
+                className="bg-gray-900 border-gray-700"
+                value={formData.tokenSymbol}
+                onChange={(e) => setFormData({...formData, tokenSymbol: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Total Supply</Label>
+              <Input
+                placeholder="e.g., 1000000"
+                className="bg-gray-900 border-gray-700"
+                value={formData.totalSupply}
+                onChange={(e) => setFormData({...formData, totalSupply: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Net Asset Value (USD)</Label>
+              <Input
+                placeholder="e.g., 125000000 (in cents)"
+                className="bg-gray-900 border-gray-700"
+                value={formData.nav}
+                onChange={(e) => setFormData({...formData, nav: e.target.value})}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label>Asset Type</Label>
               <Select 
@@ -319,21 +389,44 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
                     <p className="mb-2 text-sm text-gray-400">
                       <span className="font-semibold">Click to upload</span> or drag and drop
                     </p>
-                    <p className="text-xs text-gray-500">Legal Agreement, SPV Bylaws, or Deed (PDF)</p>
+                    <p className="text-xs text-gray-500">Legal Agreements, SPV Bylaws, Deeds, or other legal documents (PDF, multiple files allowed)</p>
                   </div>
-                  <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf" />
+                  <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf" multiple />
                 </label>
               </div>
 
-              {file && (
-                <Alert className="bg-blue-500/10 border-blue-500/20">
-                  <CheckCircle2 className="h-4 w-4 text-blue-400" />
-                  <AlertTitle className="text-blue-400">File Prepared</AlertTitle>
-                  <AlertDescription className="text-gray-400 break-all">
-                    {file.name} <br />
-                    <span className="text-xs font-mono mt-1 block">SHA-256: {fileHash}</span>
-                  </AlertDescription>
-                </Alert>
+              {files.length > 0 && (
+                <div className="space-y-2">
+                  <Alert className="bg-blue-500/10 border-blue-500/20">
+                    <CheckCircle2 className="h-4 w-4 text-blue-400" />
+                    <AlertTitle className="text-blue-400">
+                      {files.length} Legal Document{files.length > 1 ? 's' : ''} Prepared
+                    </AlertTitle>
+                    <AlertDescription className="text-gray-400">
+                      All documents have been hashed and are ready for anchoring.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  {files.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{file.name}</p>
+                        <p className="text-xs font-mono text-gray-500 truncate">
+                          SHA-256: {fileHashes[index]}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(index)}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -359,7 +452,7 @@ export function ComplianceForm({ contractAddress, onAnchored }: ComplianceFormPr
           <Button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg font-bold gap-2"
-            disabled={isPending || isConfirming || loading || !file}
+            disabled={isPending || isConfirming || loading || files.length === 0}
           >
             {isPending ? (
               <>

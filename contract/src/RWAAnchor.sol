@@ -35,10 +35,14 @@ contract RWAAnchor {
         string jurisdiction; // ISO Country Code or Name
         bool redeemable;
         address custodian;
-        bytes32 legalDocHash; // SHA-256 hash of the primary legal document
+        bytes32[] legalDocHashes; // Array of SHA-256 hashes of legal documents
         address deployer;
         string offchainAssetId;
         uint256 timestamp;
+        string tokenName;
+        string tokenSymbol;
+        uint256 totalSupply;
+        uint256 nav;
     }
 
     event AssetAnchored(
@@ -46,8 +50,12 @@ contract RWAAnchor {
         address indexed deployer,
         RWAType rwaType,
         LegalRight legalRight,
-        bytes32 legalDocHash,
-        uint256 timestamp
+        bytes32[] legalDocHashes,
+        uint256 timestamp,
+        string tokenName,
+        string tokenSymbol,
+        uint256 totalSupply,
+        uint256 nav
     );
 
     mapping(address => RWAProfile) public assetRegistry;
@@ -72,11 +80,16 @@ contract RWAAnchor {
         string calldata _jurisdiction,
         bool _redeemable,
         address _custodian,
-        bytes32 _legalDocHash,
-        string calldata _offchainAssetId
+        bytes32[] calldata _legalDocHashes,
+        string calldata _offchainAssetId,
+        string calldata _tokenName,
+        string calldata _tokenSymbol,
+        uint256 _totalSupply,
+        uint256 _nav
     ) external {
         require(!isAnchored[_contractAddress], "Asset already anchored");
         require(_contractAddress != address(0), "Invalid contract address");
+        require(_legalDocHashes.length > 0, "At least one legal document hash required");
 
         assetRegistry[_contractAddress] = RWAProfile({
             rwaType: _type,
@@ -84,10 +97,14 @@ contract RWAAnchor {
             jurisdiction: _jurisdiction,
             redeemable: _redeemable,
             custodian: _custodian,
-            legalDocHash: _legalDocHash,
+            legalDocHashes: _legalDocHashes,
             deployer: msg.sender,
             offchainAssetId: _offchainAssetId,
-            timestamp: block.timestamp
+            timestamp: block.timestamp,
+            tokenName: _tokenName,
+            tokenSymbol: _tokenSymbol,
+            totalSupply: _totalSupply,
+            nav: _nav
         });
 
         isAnchored[_contractAddress] = true;
@@ -98,8 +115,12 @@ contract RWAAnchor {
             msg.sender,
             _type,
             _right,
-            _legalDocHash,
-            block.timestamp
+            _legalDocHashes,
+            block.timestamp,
+            _tokenName,
+            _tokenSymbol,
+            _totalSupply,
+            _nav
         );
     }
 
