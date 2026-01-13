@@ -70,7 +70,11 @@ contract RWAAnchor {
      * @param _jurisdiction The legal jurisdiction (e.g., "UK", "US").
      * @param _redeemable Whether the asset is redeemable.
      * @param _custodian The address of the custodian.
-     * @param _legalDocHash The hash of the primary legal document.
+     * @param _legalDocHashes The array of hashes of legal documents.
+     * @param _tokenName The name of the token.
+     * @param _tokenSymbol The symbol of the token.
+     * @param _totalSupply The total supply of tokens.
+     * @param _nav The net asset value.
      * @param _offchainAssetId The identifier in the off-chain registry.
      */
     function registerAsset(
