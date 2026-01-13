@@ -95,7 +95,8 @@ contract RWAAnchor {
         require(_contractAddress != address(0), "Invalid contract address");
         require(_legalDocHashes.length > 0, "At least one legal document hash required");
 
-        assetRegistry[_contractAddress] = RWAProfile({
+        // Create the struct in memory first to avoid stack too deep error
+        RWAProfile memory profile = RWAProfile({
             rwaType: _type,
             legalRight: _right,
             jurisdiction: _jurisdiction,
@@ -110,6 +111,9 @@ contract RWAAnchor {
             totalSupply: _totalSupply,
             nav: _nav
         });
+
+        // Assign to storage
+        assetRegistry[_contractAddress] = profile;
 
         isAnchored[_contractAddress] = true;
         anchoredAssets.push(_contractAddress);

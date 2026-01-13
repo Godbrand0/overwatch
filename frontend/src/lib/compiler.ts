@@ -114,7 +114,7 @@ remappings = [
 solc_version = "${solcVersion}"
 optimizer = true
 optimizer_runs = 200
-via_ir = false
+via_ir = true
       `.trim();
 
       await fs.writeFile(path.join(projectPath, "foundry.toml"), foundryConfig);
@@ -341,6 +341,7 @@ remappings = [
 solc_version = "0.8.20"
 optimizer = true
 optimizer_runs = 200
+via_ir = true
       `.trim();
 
       await fs.writeFile(path.join(projectPath, "foundry.toml"), foundryConfig);

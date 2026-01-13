@@ -18,6 +18,8 @@ contract RWAAnchorTest is Test {
         vm.startPrank(deployer);
         
         bytes32 docHash = keccak256("Legal Document Content");
+        bytes32[] memory docHashes = new bytes32[](1);
+        docHashes[0] = docHash;
         
         anchor.registerAsset(
             assetContract,
@@ -26,8 +28,12 @@ contract RWAAnchorTest is Test {
             "UK",
             true,
             custodian,
-            docHash,
-            "ASSET-123"
+            docHashes,
+            "ASSET-123",
+            "Real Estate Token",
+            "RET",
+            1000000,
+            125000000
         );
         
         assertTrue(anchor.isAnchored(assetContract));
@@ -40,9 +46,13 @@ contract RWAAnchorTest is Test {
         assertEq(profile.jurisdiction, "UK");
         assertTrue(profile.redeemable);
         assertEq(profile.custodian, custodian);
-        assertEq(profile.legalDocHash, docHash);
+        assertEq(profile.legalDocHashes[0], docHash);
         assertEq(profile.deployer, deployer);
         assertEq(profile.offchainAssetId, "ASSET-123");
+        assertEq(profile.tokenName, "Real Estate Token");
+        assertEq(profile.tokenSymbol, "RET");
+        assertEq(profile.totalSupply, 1000000);
+        assertEq(profile.nav, 125000000);
         
         vm.stopPrank();
     }
@@ -51,6 +61,8 @@ contract RWAAnchorTest is Test {
         vm.startPrank(deployer);
         
         bytes32 docHash = keccak256("Legal Document Content");
+        bytes32[] memory docHashes = new bytes32[](1);
+        docHashes[0] = docHash;
         
         anchor.registerAsset(
             assetContract,
@@ -59,8 +71,12 @@ contract RWAAnchorTest is Test {
             "UK",
             true,
             custodian,
-            docHash,
-            "ASSET-123"
+            docHashes,
+            "ASSET-123",
+            "Real Estate Token",
+            "RET",
+            1000000,
+            125000000
         );
         
         vm.expectRevert("Asset already anchored");
@@ -71,8 +87,12 @@ contract RWAAnchorTest is Test {
             "US",
             false,
             custodian,
-            docHash,
-            "ASSET-456"
+            docHashes,
+            "ASSET-456",
+            "Treasury Token",
+            "TRS",
+            50000000,
+            50000000
         );
         
         vm.stopPrank();
@@ -80,6 +100,10 @@ contract RWAAnchorTest is Test {
 
     function test_RegisterAsset_InvalidAddress_Reverts() public {
         vm.startPrank(deployer);
+        
+        bytes32 docHash = keccak256("Legal Document Content");
+        bytes32[] memory docHashes = new bytes32[](1);
+        docHashes[0] = docHash;
         
         vm.expectRevert("Invalid contract address");
         anchor.registerAsset(
@@ -89,8 +113,12 @@ contract RWAAnchorTest is Test {
             "UK",
             true,
             custodian,
-            keccak256(""),
-            "ASSET-123"
+            docHashes,
+            "ASSET-123",
+            "Real Estate Token",
+            "RET",
+            1000000,
+            125000000
         );
         
         vm.stopPrank();
@@ -104,6 +132,12 @@ contract RWAAnchorTest is Test {
     function test_MultipleAssets() public {
         vm.startPrank(deployer);
         
+        bytes32[] memory docHashes1 = new bytes32[](1);
+        docHashes1[0] = keccak256("1");
+        
+        bytes32[] memory docHashes2 = new bytes32[](1);
+        docHashes2[0] = keccak256("2");
+        
         anchor.registerAsset(
             address(101),
             RWAAnchor.RWAType.REAL_ESTATE,
@@ -111,8 +145,12 @@ contract RWAAnchorTest is Test {
             "UK",
             true,
             custodian,
-            keccak256("1"),
-            "ID-1"
+            docHashes1,
+            "ID-1",
+            "Real Estate Token",
+            "RET",
+            1000000,
+            125000000
         );
         
         anchor.registerAsset(
@@ -122,8 +160,12 @@ contract RWAAnchorTest is Test {
             "US",
             false,
             custodian,
-            keccak256("2"),
-            "ID-2"
+            docHashes2,
+            "ID-2",
+            "Treasury Token",
+            "TRS",
+            50000000,
+            50000000
         );
         
         assertEq(anchor.getAnchoredCount(), 2);
