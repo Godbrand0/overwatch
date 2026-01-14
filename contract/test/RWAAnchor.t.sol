@@ -371,7 +371,7 @@ contract RWAAnchorTest is Test {
         docHashes[0] = keccak256("Document 1");
         docHashes[1] = keccak256("Document 2");
         
-        vm.expectEmit(true, true, false, false, true);
+        vm.expectEmit(true, true, false, true, address(anchor));
         emit RWAAnchor.AssetAnchored(
             assetContract,
             deployer,
