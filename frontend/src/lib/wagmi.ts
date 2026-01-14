@@ -15,6 +15,6 @@ export const config = getDefaultConfig({
     [mantle.id]: http(process.env.NEXT_PUBLIC_MANTLE_MAINNET_RPC || "https://rpc.mantle.xyz"),
   },
   ssr: true,
-  // Reduce WalletConnect reconnection attempts to minimize console warnings
-  multiInjectedProviderDiscovery: false,
+  // Enable EIP-6963 discovery for MetaMask and other wallets
+  multiInjectedProviderDiscovery: true,
 });

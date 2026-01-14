@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID!;
-const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL || "http://localhost:3000/api/auth/callback";
+const GITHUB_CALLBACK_URL = process.env.GITHUB_CALLBACK_URL || 
+  (process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback` : "http://localhost:3000/api/auth/callback");
 
 /**
  * Initiate GitHub OAuth flow
