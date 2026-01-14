@@ -137,7 +137,10 @@ via_ir = true
       } catch (execError: any) {
         // Extract a cleaner error message from forge output
         let errorMessage = execError.message;
-        if (execError.stderr) {
+        if (execError.code === 'ENOENT' || errorMessage.includes('command not found')) {
+          errorMessage = `Foundry (forge) not found at "${this.foundryPath}". ` +
+            (process.env.VERCEL ? "Vercel serverless functions do not support running Forge at runtime. Please use a dedicated backend (e.g., Railway/Render) or a build-time compilation strategy." : "Please ensure Foundry is installed and the FOUNDRY_PATH environment variable is correct.");
+        } else if (execError.stderr) {
           errorMessage = execError.stderr;
         } else if (execError.stdout) {
           errorMessage = execError.stdout;
@@ -279,14 +282,21 @@ solc_version = "${solcVersion}"
       await fs.writeFile(path.join(projectPath, "foundry.toml"), foundryConfig);
 
       // Flatten with Foundry
-      const { stdout } = await execAsync(
-        `${this.foundryPath} flatten ${contractPath} --root ${projectPath}`
-      );
-
-      // Cleanup
-      await this.cleanup(projectPath);
-
-      return stdout;
+      try {
+        const { stdout } = await execAsync(
+          `${this.foundryPath} flatten ${contractPath} --root ${projectPath}`
+        );
+        // Cleanup
+        await this.cleanup(projectPath);
+        return stdout;
+      } catch (execError: any) {
+        let errorMessage = execError.message;
+        if (execError.code === 'ENOENT' || errorMessage.includes('command not found')) {
+          errorMessage = `Foundry (forge) not found at "${this.foundryPath}". ` +
+            (process.env.VERCEL ? "Vercel serverless functions do not support running Forge at runtime." : "Please ensure Foundry is installed.");
+        }
+        throw new Error(errorMessage);
+      }
     } catch (error: any) {
       // Cleanup on error
       await this.cleanup(projectPath);
@@ -358,9 +368,20 @@ via_ir = true
 
       // Run tests with JSON output
       // We ignore stderr because forge writes some info there even on success
-      const { stdout } = await execAsync(
-        `${this.foundryPath} test --root ${projectPath} --json`
-      );
+      let stdout;
+      try {
+        const result = await execAsync(
+          `${this.foundryPath} test --root ${projectPath} --json`
+        );
+        stdout = result.stdout;
+      } catch (execError: any) {
+        let errorMessage = execError.message;
+        if (execError.code === 'ENOENT' || errorMessage.includes('command not found')) {
+          errorMessage = `Foundry (forge) not found at "${this.foundryPath}". ` +
+            (process.env.VERCEL ? "Vercel serverless functions do not support running Forge at runtime." : "Please ensure Foundry is installed.");
+        }
+        throw new Error(errorMessage);
+      }
 
       // Parse JSON output
       // Forge output is a JSON object where keys are test files
