@@ -3,6 +3,7 @@ import { promisify } from "util";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
+import { existsSync } from "fs";
 import { encodeAbiParameters } from "viem";
 
 const execAsync = promisify(exec);
@@ -26,7 +27,15 @@ export class CompilerService {
   private tempDir: string;
 
   constructor() {
-    this.foundryPath = process.env.FOUNDRY_PATH || "forge";
+    const envPath = process.env.FOUNDRY_PATH;
+    // If FOUNDRY_PATH is an absolute path, verify it exists. 
+    // Otherwise, or if it doesn't exist, fallback to "forge"
+    if (envPath && envPath.startsWith("/") && !existsSync(envPath)) {
+      console.warn(`FOUNDRY_PATH ${envPath} not found, falling back to "forge"`);
+      this.foundryPath = "forge";
+    } else {
+      this.foundryPath = envPath || "forge";
+    }
     this.tempDir = path.join(os.tmpdir(), "overwatch-compiler");
   }
 
