@@ -2,6 +2,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 import { encodeAbiParameters } from "viem";
 
 const execAsync = promisify(exec);
@@ -26,7 +27,7 @@ export class CompilerService {
 
   constructor() {
     this.foundryPath = process.env.FOUNDRY_PATH || "forge";
-    this.tempDir = path.join(process.cwd(), ".temp");
+    this.tempDir = path.join(os.tmpdir(), "overwatch-compiler");
   }
 
   /**
