@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {RWAAnchor} from "../src/RWAAnchor.sol";
 
-contract RWAAnchorTest is Test {
+contract RWAAnchorTest is Test, RWAAnchor {
     RWAAnchor public anchor;
     address public deployer = address(1);
     address public assetContract = address(100);
@@ -462,7 +462,7 @@ contract RWAAnchorTest is Test {
         // Register assets in a specific order
         address[] memory assetAddresses = new address[](5);
         for (uint i = 0; i < 5; i++) {
-            assetAddresses[i] = address(3000 + i);
+            assetAddresses[i] = address(uint160(3000 + i));
             anchor.registerAsset(
                 assetAddresses[i],
                 RWAAnchor.RWAType.REAL_ESTATE,
